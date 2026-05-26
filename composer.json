@@ -1,5 +1,5 @@
 {
-    "name": "sylius/mate-extension",
+    "name": "sylius/sylius-mate-extension",
     "description": "Dev-only Symfony AI Mate extension for Sylius: exposes the runtime domain (resources, hooks, grids, routes, services) to AI clients via MCP.",
     "license": "MIT",
     "type": "symfony-ai-mate",
