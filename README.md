@@ -32,7 +32,7 @@ General Sylius documentation is available at [docs.sylius.com](https://docs.syli
 Add the extension as a dev dependency of your Sylius project:
 
 ```bash
-$ composer require --dev sylius/mate-extension
+$ composer require --dev sylius/sylius-mate-extension
 ```
 
 Initialize the Mate environment and discover the extension:
@@ -81,7 +81,7 @@ Would like to help us build a more capable Sylius developer experience? Start fr
 
 ## Bug Tracking
 
-If you want to report a bug or suggest an idea, please use [GitHub issues](https://github.com/Sylius/mate-extension/issues).
+If you want to report a bug or suggest an idea, please use [GitHub issues](https://github.com/Sylius/sylius-mate-extension/issues).
 
 ## Community Support
 
