@@ -6,6 +6,7 @@ namespace Sylius\MateExtension\Tool\Service;
 
 use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
+use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
 
 #[McpTool(
@@ -36,7 +37,7 @@ final class ServicesYamlPatchExclude
      */
     private function patch(string $exclude, bool $dryRun, ?string $appNamespace): array
     {
-        $projectDir = $this->projectDir();
+        $projectDir = HostProjectDir::resolve($this->host);
         $servicesYaml = $projectDir . '/config/services.yaml';
 
         if (!is_file($servicesYaml)) {
@@ -152,16 +153,6 @@ final class ServicesYamlPatchExclude
         return $envelope;
     }
 
-    private function projectDir(): string
-    {
-        $container = $this->host->getContainer();
-        if ($container instanceof \Symfony\Component\DependencyInjection\Container && $container->hasParameter('kernel.project_dir')) {
-            return (string) $container->getParameter('kernel.project_dir');
-        }
-
-        return getcwd() ?: '.';
-    }
-
     private function detectAppNamespace(string $projectDir): string
     {
         $composerJson = $projectDir . '/composer.json';
@@ -176,7 +167,8 @@ final class ServicesYamlPatchExclude
             return 'App';
         }
 
-        $psr4 = $composer['autoload']['psr-4'] ?? [];
+        $autoload = $composer['autoload'] ?? [];
+        $psr4 = \is_array($autoload) ? ($autoload['psr-4'] ?? []) : [];
         if (!\is_array($psr4)) {
             return 'App';
         }

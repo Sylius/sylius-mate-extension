@@ -6,6 +6,7 @@ namespace Sylius\MateExtension\Tool\Service;
 
 use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
+use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
 use Symfony\Component\Yaml\Yaml;
 
@@ -37,7 +38,7 @@ final class ServicesYamlAudit
             return Envelope::error('yaml_unavailable', 'symfony/yaml component is required.');
         }
 
-        $projectRoot = $this->projectRoot();
+        $projectRoot = HostProjectDir::resolve($this->host);
         $rootFile = $projectRoot . '/config/services.yaml';
         if (!is_file($rootFile)) {
             return Envelope::error('services_yaml_missing', sprintf('No %s found.', $rootFile));
@@ -73,10 +74,11 @@ final class ServicesYamlAudit
                 $resource = $entry['resource'] ?? null;
                 if (\is_string($resource)) {
                     if (null === $appGlob && !str_contains($key, 'Controller')) {
+                        $exclude = $entry['exclude'] ?? [];
                         $appGlob = [
                             'service_pattern' => $key,
                             'resource' => $resource,
-                            'exclude' => $entry['exclude'] ?? [],
+                            'exclude' => \is_string($exclude) || \is_array($exclude) ? $exclude : [],
                             'file' => $this->stripRoot($file, $projectRoot),
                         ];
                     }
@@ -122,13 +124,14 @@ final class ServicesYamlAudit
 
     /**
      * @param array<string, mixed>                                      $def
-     * @param array{service_pattern: string, resource: string, exclude: array<int, string>|string, file: string} $appGlob
+     * @param array{service_pattern: string, resource: string, exclude: array<int|string, mixed>|string, file: string} $appGlob
      *
      * @return ?array<string, mixed>
      */
     private function detectConflict(array $def, array $appGlob, string $projectRoot): ?array
     {
-        $class = (string) ($def['class'] ?? $def['id']);
+        $classRaw = $def['class'] ?? $def['id'];
+        $class = \is_string($classRaw) ? $classRaw : '';
         if (!str_contains($class, '\\')) {
             return null;
         }
@@ -159,7 +162,7 @@ final class ServicesYamlAudit
     }
 
     /**
-     * @param array<int, string>|string $exclude
+     * @param array<int|string, mixed>|string $exclude
      *
      * @return list<string>
      */
@@ -208,7 +211,7 @@ final class ServicesYamlAudit
     private function resolveImports(string $rootFile): array
     {
         $parsed = Yaml::parseFile($rootFile);
-        $imports = \is_array($parsed['imports'] ?? null) ? $parsed['imports'] : [];
+        $imports = \is_array($parsed) && \is_array($parsed['imports'] ?? null) ? $parsed['imports'] : [];
 
         $files = [];
         foreach ($imports as $import) {
@@ -267,16 +270,6 @@ final class ServicesYamlAudit
         }
 
         return $names;
-    }
-
-    private function projectRoot(): string
-    {
-        $container = $this->host->getContainer();
-        if ($container instanceof \Symfony\Component\DependencyInjection\Container && $container->hasParameter('kernel.project_dir')) {
-            return (string) $container->getParameter('kernel.project_dir');
-        }
-
-        return getcwd() ?: '.';
     }
 
     private function stripRoot(string $absolute, string $root): string

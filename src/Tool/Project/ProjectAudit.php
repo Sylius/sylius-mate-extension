@@ -6,6 +6,7 @@ namespace Sylius\MateExtension\Tool\Project;
 
 use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
+use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
 
 #[McpTool(
@@ -46,7 +47,7 @@ final class ProjectAudit
      */
     private function audit(): array
     {
-        $projectDir = $this->projectDir();
+        $projectDir = HostProjectDir::resolve($this->host);
         $checks = [];
 
         $servicesYaml = $projectDir . '/config/services.yaml';
@@ -196,7 +197,8 @@ final class ProjectAudit
      */
     private function checkMailerObservable(): array
     {
-        $dsn = (string) ($_SERVER['MAILER_DSN'] ?? $_ENV['MAILER_DSN'] ?? getenv('MAILER_DSN') ?: '');
+        $dsnRaw = $_SERVER['MAILER_DSN'] ?? $_ENV['MAILER_DSN'] ?? getenv('MAILER_DSN') ?: '';
+        $dsn = \is_string($dsnRaw) ? $dsnRaw : '';
 
         if ('' === $dsn) {
             return [
@@ -287,15 +289,5 @@ final class ProjectAudit
             'status' => 'absent',
             'fix' => 'Add bin/console app:variant:restock command (MSI-aware if multi-source-inventory-plugin installed) for Playwright stock setup.',
         ];
-    }
-
-    private function projectDir(): string
-    {
-        $container = $this->host->getContainer();
-        if ($container instanceof \Symfony\Component\DependencyInjection\Container && $container->hasParameter('kernel.project_dir')) {
-            return (string) $container->getParameter('kernel.project_dir');
-        }
-
-        return getcwd() ?: '.';
     }
 }

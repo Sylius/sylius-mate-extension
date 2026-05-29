@@ -56,9 +56,12 @@ final class ActionsAudit
             return Envelope::error('invalid_actions', sprintf('Grid "%s" actions: is not an array.', $grid_name));
         }
 
+        $main = \is_array($actions['main'] ?? null) ? $actions['main'] : [];
+        $item = \is_array($actions['item'] ?? null) ? $actions['item'] : [];
+
         $warnings = [];
 
-        foreach ($actions['main'] ?? [] as $name => $config) {
+        foreach ($main as $name => $config) {
             $type = \is_array($config) ? ($config['type'] ?? null) : $config;
             if (\is_string($type) && \in_array($type, self::ITEM_ONLY_TYPES, true)) {
                 $warnings[] = sprintf(
@@ -70,11 +73,11 @@ final class ActionsAudit
             }
         }
 
-        if (!isset($actions['main']['create'])) {
+        if (!isset($main['create'])) {
             $warnings[] = 'No actions.main.create — admins cannot create new resources from the grid toolbar.';
         }
 
-        foreach ($actions['item'] ?? [] as $name => $config) {
+        foreach ($item as $name => $config) {
             $type = \is_array($config) ? ($config['type'] ?? null) : $config;
             if (\is_string($type) && 'create' === $type) {
                 $warnings[] = sprintf(
@@ -87,8 +90,8 @@ final class ActionsAudit
         return Envelope::items(
             [[
                 'grid' => $grid_name,
-                'main' => array_keys($actions['main'] ?? []),
-                'item' => array_keys($actions['item'] ?? []),
+                'main' => array_keys($main),
+                'item' => array_keys($item),
                 'warnings' => $warnings,
             ]],
             null,

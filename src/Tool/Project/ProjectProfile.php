@@ -6,7 +6,9 @@ namespace Sylius\MateExtension\Tool\Project;
 
 use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
+use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
+use Webmozart\Assert\Assert;
 
 #[McpTool(
     name: 'sylius_project_profile',
@@ -32,25 +34,26 @@ final class ProjectProfile
      */
     private function profile(): array
     {
-        $projectDir = $this->projectDir();
+        $projectDir = HostProjectDir::resolve($this->host);
         $appNamespace = $this->detectAppNamespace($projectDir);
 
         $container = $this->host->getContainer();
         $isContainer = $container instanceof \Symfony\Component\DependencyInjection\Container;
 
         $defaultLocale = $isContainer && $container->hasParameter('kernel.default_locale')
-            ? (string) $container->getParameter('kernel.default_locale')
+            ? $this->stringParameter($container, 'kernel.default_locale', 'en_US')
             : 'en_US';
 
         $enabledLocales = $this->detectEnabledLocales($container, $projectDir, $defaultLocale);
 
         $defaultChannelCode = $isContainer && $container->hasParameter('sylius.channel.default_code')
-            ? (string) $container->getParameter('sylius.channel.default_code')
+            ? $this->stringParameter($container, 'sylius.channel.default_code', 'default')
             : 'default';
 
-        $mailerDsn = (string) ($_SERVER['MAILER_DSN'] ?? $_ENV['MAILER_DSN'] ?? getenv('MAILER_DSN') ?: '');
+        $mailerDsnRaw = $_SERVER['MAILER_DSN'] ?? $_ENV['MAILER_DSN'] ?? getenv('MAILER_DSN') ?: '';
+        $mailerDsn = \is_string($mailerDsnRaw) ? $mailerDsnRaw : '';
         if ('' === $mailerDsn && $isContainer && $container->hasParameter('env(MAILER_DSN)')) {
-            $mailerDsn = (string) $container->getParameter('env(MAILER_DSN)');
+            $mailerDsn = $this->stringParameter($container, 'env(MAILER_DSN)', '');
         }
         $mailerObservable = $this->isMailerObservable($mailerDsn);
 
@@ -86,14 +89,11 @@ final class ProjectProfile
         ));
     }
 
-    private function projectDir(): string
+    private function stringParameter(\Symfony\Component\DependencyInjection\Container $container, string $name, string $default): string
     {
-        $container = $this->host->getContainer();
-        if ($container instanceof \Symfony\Component\DependencyInjection\Container && $container->hasParameter('kernel.project_dir')) {
-            return (string) $container->getParameter('kernel.project_dir');
-        }
+        $value = $container->getParameter($name);
 
-        return getcwd() ?: '.';
+        return \is_string($value) ? $value : $default;
     }
 
     private function detectAppNamespace(string $projectDir): string
@@ -115,7 +115,8 @@ final class ProjectProfile
             return 'App';
         }
 
-        $psr4 = $composer['autoload']['psr-4'] ?? [];
+        $autoload = $composer['autoload'] ?? [];
+        $psr4 = \is_array($autoload) ? ($autoload['psr-4'] ?? []) : [];
         if (!\is_array($psr4)) {
             return 'App';
         }
@@ -160,7 +161,7 @@ final class ProjectProfile
 
                 $value = $container->getParameter($parameter);
                 if (\is_array($value) && [] !== $value) {
-                    return array_values(array_filter(array_map('strval', $value)));
+                    return array_values(array_filter(array_map(static fn (mixed $v): string => (string) (\is_scalar($v) ? $v : ''), $value)));
                 }
             }
         }

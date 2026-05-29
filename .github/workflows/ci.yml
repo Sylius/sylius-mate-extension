@@ -1,0 +1,52 @@
+name: CI
+
+on:
+    push:
+        branches: [ main ]
+    pull_request:
+
+jobs:
+    test:
+        name: Test
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.5'
+                  extensions: json
+                  coverage: none
+
+            - name: Validate composer.json
+              run: composer validate --strict
+
+            - name: Install dependencies
+              run: composer install --prefer-dist --no-progress --no-interaction
+
+            - name: Run tests
+              run: composer test
+
+    phpstan:
+        name: PHPStan
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.5'
+                  extensions: json
+                  coverage: none
+
+            - name: Install dependencies
+              run: composer install --prefer-dist --no-progress --no-interaction
+
+            - name: Run PHPStan
+              run: composer phpstan

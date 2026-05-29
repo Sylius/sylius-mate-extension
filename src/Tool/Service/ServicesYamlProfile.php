@@ -6,6 +6,7 @@ namespace Sylius\MateExtension\Tool\Service;
 
 use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
+use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
 use Symfony\Component\Yaml\Yaml;
 
@@ -29,7 +30,7 @@ final class ServicesYamlProfile
             return Envelope::error('yaml_unavailable', 'symfony/yaml component is required to parse the host services file.');
         }
 
-        $projectRoot = $this->projectRoot();
+        $projectRoot = HostProjectDir::resolve($this->host);
         $path = $this->locateServicesYaml($projectRoot);
         if (null === $path) {
             return Envelope::error(
@@ -52,7 +53,7 @@ final class ServicesYamlProfile
             return Envelope::error('parse_failed', sprintf('Could not parse %s as YAML.', $path));
         }
 
-        $services = $parsed['services'] ?? [];
+        $services = \is_array($parsed['services'] ?? null) ? $parsed['services'] : [];
         $defaults = \is_array($services['_defaults'] ?? null) ? $services['_defaults'] : [];
         $instanceof = \is_array($services['_instanceof'] ?? null) ? $services['_instanceof'] : [];
 
@@ -93,16 +94,6 @@ final class ServicesYamlProfile
         ];
 
         return $envelope;
-    }
-
-    private function projectRoot(): string
-    {
-        $container = $this->host->getContainer();
-        if ($container instanceof \Symfony\Component\DependencyInjection\Container && $container->hasParameter('kernel.project_dir')) {
-            return (string) $container->getParameter('kernel.project_dir');
-        }
-
-        return getcwd() ?: '.';
     }
 
     private function locateServicesYaml(string $root): ?string

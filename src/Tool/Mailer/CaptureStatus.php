@@ -63,12 +63,12 @@ final class CaptureStatus
     {
         $candidates = ['MAILER_DSN'];
         foreach ($candidates as $key) {
-            if (isset($_ENV[$key]) && '' !== $_ENV[$key]) {
-                return (string) $_ENV[$key];
+            if (isset($_ENV[$key]) && '' !== $_ENV[$key] && \is_string($_ENV[$key])) {
+                return $_ENV[$key];
             }
 
-            if (isset($_SERVER[$key]) && '' !== $_SERVER[$key]) {
-                return (string) $_SERVER[$key];
+            if (isset($_SERVER[$key]) && '' !== $_SERVER[$key] && \is_string($_SERVER[$key])) {
+                return $_SERVER[$key];
             }
 
             $value = getenv($key);

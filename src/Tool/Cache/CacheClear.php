@@ -6,6 +6,7 @@ namespace Sylius\MateExtension\Tool\Cache;
 
 use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostKernelProvider;
+use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -131,12 +132,7 @@ final class CacheClear
 
     private function cacheDir(string $env): string
     {
-        $container = $this->host->getContainer();
-        if ($container instanceof \Symfony\Component\DependencyInjection\Container && $container->hasParameter('kernel.project_dir')) {
-            return sprintf('%s/var/cache/%s', (string) $container->getParameter('kernel.project_dir'), $env);
-        }
-
-        return getcwd() . '/var/cache/' . $env;
+        return sprintf('%s/var/cache/%s', HostProjectDir::resolve($this->host), $env);
     }
 
     private function recursiveRm(string $path): void

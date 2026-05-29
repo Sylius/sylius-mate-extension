@@ -10,7 +10,6 @@ use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
 use Sylius\TwigHooks\Hookable\HookableTemplate;
 use Twig\Environment;
-use Twig\Error\LoaderError;
 
 #[McpTool(
     name: 'sylius_hooks_resolve_for_visibility',
@@ -109,7 +108,7 @@ final class ResolveForVisibility
     /**
      * @param array<string, \Sylius\TwigHooks\Hookable\AbstractHookable> $byName
      */
-    private function guessParentTemplate(array $byName, string $hookName, string $section): ?string
+    private function guessParentTemplate(array $byName, string $hookName, string $section): string
     {
         foreach ($byName as $hookable) {
             if ($hookable instanceof HookableTemplate) {
@@ -173,7 +172,7 @@ final class ResolveForVisibility
             }
 
             return $twig->getLoader()->getSourceContext($name)->getCode();
-        } catch (LoaderError | \Throwable) {
+        } catch (\Throwable) {
             return null;
         }
     }
