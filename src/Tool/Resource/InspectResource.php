@@ -7,7 +7,6 @@ namespace Sylius\MateExtension\Tool\Resource;
 use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
-use Sylius\Resource\Metadata\MetadataInterface;
 use Sylius\Resource\Metadata\RegistryInterface;
 use Sylius\Resource\Model\ResourceInterface;
 
@@ -45,10 +44,6 @@ final class InspectResource
                 'Resource alias "%s" not registered. Call sylius_domain_resource_template to scaffold it.',
                 $alias,
             ));
-        }
-
-        if (!$metadata instanceof MetadataInterface) {
-            return Envelope::error('invalid_metadata', sprintf('Registry returned a non-metadata entry for "%s".', $alias));
         }
 
         $classes = [];

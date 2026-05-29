@@ -6,6 +6,7 @@ namespace Sylius\MateExtension\Kernel;
 
 use Psr\Container\ContainerInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Webmozart\Assert\Assert;
 
 final class HostKernelProvider implements HostContainerProvider
 {
@@ -71,7 +72,8 @@ final class HostKernelProvider implements HostContainerProvider
             ));
         }
 
-        $env = (string) ($_SERVER['MATE_HOST_ENV'] ?? $this->env);
+        $env = $_SERVER['MATE_HOST_ENV'] ?? $this->env;
+        Assert::string($env);
         $debug = filter_var($_SERVER['MATE_HOST_DEBUG'] ?? $this->debug, \FILTER_VALIDATE_BOOL);
 
         $kernel = new $class($env, $debug);
@@ -134,7 +136,8 @@ final class HostKernelProvider implements HostContainerProvider
         }
 
         $candidates = [];
-        $psr4 = $composer['autoload']['psr-4'] ?? [];
+        $autoload = $composer['autoload'] ?? [];
+        $psr4 = \is_array($autoload) ? ($autoload['psr-4'] ?? []) : [];
         if (!\is_array($psr4)) {
             return [];
         }

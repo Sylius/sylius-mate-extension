@@ -6,6 +6,7 @@ namespace Sylius\MateExtension\Tool\Translation;
 
 use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
+use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
 use Symfony\Component\Yaml\Yaml;
 
@@ -49,7 +50,7 @@ final class TranslationCreate
             }
         }
 
-        $projectRoot = $this->projectRoot();
+        $projectRoot = HostProjectDir::resolve($this->host);
         $items = [];
 
         foreach ($targetLocales as $loc) {
@@ -122,10 +123,10 @@ final class TranslationCreate
     }
 
     /**
-     * @param array<string, mixed> $base
-     * @param array<string, mixed> $overlay
+     * @param array<array-key, mixed> $base
+     * @param array<array-key, mixed> $overlay
      *
-     * @return array<string, mixed>
+     * @return array<array-key, mixed>
      */
     private function mergeRecursive(array $base, array $overlay): array
     {
@@ -157,15 +158,5 @@ final class TranslationCreate
         }
 
         return 'en';
-    }
-
-    private function projectRoot(): string
-    {
-        $container = $this->host->getContainer();
-        if ($container instanceof \Symfony\Component\DependencyInjection\Container && $container->hasParameter('kernel.project_dir')) {
-            return (string) $container->getParameter('kernel.project_dir');
-        }
-
-        return getcwd() ?: '.';
     }
 }

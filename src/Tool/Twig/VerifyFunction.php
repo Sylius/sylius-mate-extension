@@ -138,11 +138,21 @@ final class VerifyFunction
             return new \ReflectionFunction($callable);
         }
 
-        if (\is_array($callable) && 2 === \count($callable)) {
-            [$target, $method] = $callable;
-            $class = \is_object($target) ? $target::class : (string) $target;
+        if (\is_array($callable) && 2 === \count($callable) && isset($callable[0], $callable[1])) {
+            $target = $callable[0];
+            $method = $callable[1];
+            if (!\is_string($method)) {
+                return null;
+            }
+            if (\is_object($target)) {
+                $class = $target::class;
+            } elseif (\is_string($target)) {
+                $class = $target;
+            } else {
+                return null;
+            }
 
-            return new \ReflectionMethod($class, (string) $method);
+            return new \ReflectionMethod($class, $method);
         }
 
         if (\is_object($callable) && method_exists($callable, '__invoke')) {

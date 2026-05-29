@@ -6,6 +6,7 @@ namespace Sylius\MateExtension\Tool\Project;
 
 use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
+use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
 
 #[McpTool(
@@ -73,7 +74,7 @@ final class InstalledPlugins
      */
     private function detect(): array
     {
-        $projectDir = $this->projectDir();
+        $projectDir = HostProjectDir::resolve($this->host);
         $bundlesFile = $projectDir . '/config/bundles.php';
 
         if (!is_file($bundlesFile)) {
@@ -141,22 +142,12 @@ final class InstalledPlugins
             }
 
             foreach ($packages as $package) {
-                if (\is_array($package) && isset($package['name'], $package['version']) && \is_string($package['name'])) {
-                    $map[$package['name']] = (string) $package['version'];
+                if (\is_array($package) && isset($package['name'], $package['version']) && \is_string($package['name']) && \is_string($package['version'])) {
+                    $map[$package['name']] = $package['version'];
                 }
             }
         }
 
         return $map;
-    }
-
-    private function projectDir(): string
-    {
-        $container = $this->host->getContainer();
-        if ($container instanceof \Symfony\Component\DependencyInjection\Container && $container->hasParameter('kernel.project_dir')) {
-            return (string) $container->getParameter('kernel.project_dir');
-        }
-
-        return getcwd() ?: '.';
     }
 }

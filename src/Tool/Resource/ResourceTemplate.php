@@ -319,7 +319,8 @@ final class ResourceTemplate
             return 'App';
         }
 
-        $psr4 = $composer['autoload']['psr-4'] ?? [];
+        $autoload = $composer['autoload'] ?? [];
+        $psr4 = \is_array($autoload) ? ($autoload['psr-4'] ?? []) : [];
         if (!\is_array($psr4)) {
             return 'App';
         }

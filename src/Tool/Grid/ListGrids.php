@@ -27,7 +27,7 @@ final class ListGrids
     public function __invoke(?string $name_prefix = null, int $limit = 50, ?string $cursor = null): array
     {
         $container = $this->host->getContainer();
-        if (!$container->hasParameter(self::PARAMETER)) {
+        if (!$container instanceof \Symfony\Component\DependencyInjection\Container || !$container->hasParameter(self::PARAMETER)) {
             return Envelope::empty(sprintf('Parameter "%s" is not set. SyliusGridBundle may not be enabled.', self::PARAMETER));
         }
 
@@ -48,7 +48,7 @@ final class ListGrids
             $items[] = [
                 'name' => $name,
                 'driver' => \is_array($driver) ? ($driver['name'] ?? null) : null,
-                'resource_class' => \is_array($driver) ? ($driver['options']['class'] ?? null) : null,
+                'resource_class' => \is_array($driver) && \is_array($driver['options'] ?? null) ? ($driver['options']['class'] ?? null) : null,
                 'fields' => isset($definition['fields']) && \is_array($definition['fields']) ? array_keys($definition['fields']) : [],
                 'filters' => isset($definition['filters']) && \is_array($definition['filters']) ? array_keys($definition['filters']) : [],
                 'actions' => isset($definition['actions']) && \is_array($definition['actions']) ? array_keys($definition['actions']) : [],
