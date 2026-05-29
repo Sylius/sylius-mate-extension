@@ -40,6 +40,5 @@
             "instructions": "INSTRUCTIONS.md"
         }
     },
-    "minimum-stability": "dev",
     "prefer-stable": true
 }
