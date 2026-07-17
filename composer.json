@@ -6,8 +6,8 @@
     "keywords": ["sylius", "mcp", "devtools", "ai", "dev"],
     "require": {
         "php": ">=8.2",
-        "symfony/ai-mate": "^0.9",
-        "mcp/sdk": "^0.5"
+        "symfony/ai-mate": "^0.11",
+        "mcp/sdk": "^0.7"
     },
     "require-dev": {
         "helgesverre/toon": "^3.1",
