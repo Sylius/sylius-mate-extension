@@ -37,7 +37,8 @@
         "ai-mate": {
             "scan-dirs": ["src/Tool"],
             "includes": ["config/config.php"],
-            "instructions": "INSTRUCTIONS.md"
+            "instructions": "INSTRUCTIONS.md",
+            "skills": ["skills"]
         }
     },
     "prefer-stable": true
