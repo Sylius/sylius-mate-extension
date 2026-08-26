@@ -9,26 +9,29 @@ Deep dive on email registration + send path.
 ```yaml
 sylius_mailer:
     emails:
-        back_in_stock:
-            subject: app.email.back_in_stock.subject
-            template: 'email/back_in_stock.html.twig'
+        app_<code>:
+            subject: app.email.<code>.subject
+            template: 'email/<code>.html.twig'
 ```
 
-`templates/email/back_in_stock.html.twig` (R-EMAIL-LAYOUT):
+`templates/email/<code>.html.twig` (R-EMAIL-LAYOUT):
 
 ```twig
 {% extends '@SyliusCore/Email/layout.html.twig' %}
 
 {% block subject %}
-    {% set translation_locale = notification.localeCode %}
-    {{ 'app.email.back_in_stock.subject'|trans({}, 'messages', translation_locale) }}
+    {% set translation_locale = <resource>.localeCode %}
+    {{ 'app.email.<code>.subject'|trans({}, 'messages', translation_locale) }}
 {% endblock %}
 
 {% block content %}
-    {% set translation_locale = notification.localeCode %}
-    <p>{{ 'app.email.back_in_stock.body'|trans({'%product%': variant.product.name}, 'messages', translation_locale) }}</p>
+    {% set translation_locale = <resource>.localeCode %}
+    <p>{{ 'app.email.<code>.body'|trans({}, 'messages', translation_locale) }}</p>
 {% endblock %}
 ```
+
+A filled-in instance (`app_back_in_stock`, with a product-name interpolation)
+is in `reference/worked-example.md`.
 
 Rules:
 
@@ -52,25 +55,24 @@ public function __construct(
 ) {
 }
 
-$channel = $this->channels->findOneByCode($notification->getChannelCode());
+$channel = $this->channels->findOneByCode($entity->getChannelCode());
 
 $this->sender->send(
-    'back_in_stock',
-    [$notification->getEmail()],
+    'app_<code>',
+    [$entity->getEmail()],
     [
-        'notification' => $notification,
-        'variant' => $variant,
+        'entity' => $entity,
         'channel' => $channel,
-        'localeCode' => $notification->getLocaleCode(),
+        'localeCode' => $entity->getLocaleCode(),
     ],
 );
 ```
 
-Code (`back_in_stock`) matches `sylius_mailer.emails.<code>`. Context MUST include `channel` + `localeCode` (from the persisted resource, not the current request) - see R-MAILER-CTX.
+Code (`app_<code>`) matches `sylius_mailer.emails.<code>`. Context MUST include `channel` + `localeCode` (from the persisted resource, not the current request) - see R-MAILER-CTX.
 
 ## Per-channel template
 
-Channel-aware override: place template at `templates/email/<channel_code>/back_in_stock.html.twig`. Sylius resolves channel-scoped path first, falls back to default.
+Channel-aware override: place template at `templates/email/<channel_code>/<code>.html.twig`. Sylius resolves channel-scoped path first, falls back to default.
 
 For per-channel subject/sender, configure under `sylius_mailer.channels.<code>.emails.<code>`.
 
@@ -79,23 +81,23 @@ For per-channel subject/sender, configure under `sylius_mailer.channels.<code>.e
 Wrap in Messenger:
 
 ```php
-final class SendBackInStock
+final class <X>Triggered
 {
-    public function __construct(public string $email, public string $productCode) {}
+    public function __construct(public string $email, public string $code) {}
 }
 
 #[AsMessageHandler]
-final class SendBackInStockHandler
+final class <X>Handler
 {
     public function __construct(
         private SenderInterface $sender,
-        private ProductRepositoryInterface $products,
+        private <Name>RepositoryInterface $entities,
     ) {}
 
-    public function __invoke(SendBackInStock $m): void
+    public function __invoke(<X>Triggered $m): void
     {
-        $product = $this->products->findOneByCode($m->productCode);
-        $this->sender->send('back_in_stock', [$m->email], ['product' => $product]);
+        $entity = $this->entities->findOneByCode($m->code);
+        $this->sender->send('app_<code>', [$m->email], ['entity' => $entity]);
     }
 }
 ```

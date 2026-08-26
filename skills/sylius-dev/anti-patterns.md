@@ -1,6 +1,10 @@
 # Anti-Patterns
 
-❌/✅ pairs per hard rule. Lazy-load when refusing.
+❌/✅ pairs per hard rule. Lazy-load when refusing. Placeholders (`<Name>`,
+`<alias>`, `<X>`, `<AppNs>`, `<feature>`) stand for whatever you're actually
+building - `reference/worked-example.md` fills every one of them in for one
+real feature end to end, if you want to see a rule applied concretely rather
+than in the abstract.
 
 ## 1. Plain Doctrine entity
 
@@ -8,7 +12,7 @@
 
 ```php
 #[ORM\Entity]
-class BackInStockNotification
+class <Name>
 {
     #[ORM\Id, ORM\GeneratedValue, ORM\Column]
     private ?int $id = null;
@@ -18,12 +22,12 @@ class BackInStockNotification
 ✅ Right:
 
 ```php
-interface BackInStockNotificationInterface extends ResourceInterface
+interface <Name>Interface extends ResourceInterface
 {
 }
 
 #[ORM\Entity]
-class BackInStockNotification implements BackInStockNotificationInterface
+class <Name> implements <Name>Interface
 {
 }
 ```
@@ -31,12 +35,12 @@ class BackInStockNotification implements BackInStockNotificationInterface
 ```yaml
 sylius_resource:
     resources:
-        app.back_in_stock_notification:
+        app.<alias>:
             classes:
-                model: App\Entity\BackInStockNotification
-                interface: App\Entity\BackInStockNotificationInterface
-                repository: App\Repository\BackInStockNotificationRepository
-                form: App\Form\Type\BackInStockNotificationType
+                model: <AppNs>\Entity\<Name>
+                interface: <AppNs>\Entity\<Name>Interface
+                repository: <AppNs>\Repository\<Name>Repository
+                form: <AppNs>\Form\Type\<Name>Type
 ```
 
 **Why:** Resource registration unlocks factory, repo, admin grid, events, API auto-wiring. Plain Doctrine = manual everything + breaks plugin extension points.
@@ -52,8 +56,8 @@ public function __construct(private EntityManagerInterface $em) {}
 
 public function __invoke(Request $request): Response
 {
-    $notif = new BackInStockNotification(...);
-    $this->em->persist($notif);
+    $entity = new <Name>(...);
+    $this->em->persist($entity);
     $this->em->flush();
 }
 ```
@@ -62,15 +66,15 @@ public function __invoke(Request $request): Response
 
 ```php
 public function __construct(
-    private BackInStockNotificationFactoryInterface $factory,
-    private BackInStockNotificationRepositoryInterface $repository,
+    private <Name>FactoryInterface $factory,
+    private <Name>RepositoryInterface $repository,
 ) {
 }
 
 public function __invoke(Request $request): Response
 {
-    $notif = $this->factory->createNew();
-    $this->repository->add($notif);
+    $entity = $this->factory->createNew();
+    $this->repository->add($entity);
 }
 ```
 
@@ -81,11 +85,11 @@ public function __invoke(Request $request): Response
 ❌ Wrong:
 
 ```php
-final class BackInStockNotificationType extends AbstractType
+final class <Name>Type extends AbstractType
 {
     public function getBlockPrefix(): string
     {
-        return 'app_back_in_stock_notification';
+        return 'app_<alias>';
     }
 }
 ```
@@ -93,11 +97,11 @@ final class BackInStockNotificationType extends AbstractType
 ✅ Right:
 
 ```php
-final class BackInStockNotificationType extends AbstractResourceType
+final class <Name>Type extends AbstractResourceType
 {
     protected function getBlockPrefix(): string
     {
-        return 'app_back_in_stock_notification';
+        return 'app_<alias>';
     }
 }
 ```
@@ -109,9 +113,9 @@ final class BackInStockNotificationType extends AbstractResourceType
 ❌ Wrong:
 
 ```twig
-<form method="post" action="{{ path('app_shop_back_in_stock_subscribe') }}">
+<form method="post" action="{{ path('<route>') }}">
     <input type="email" name="email" required>
-    <button>Notify me</button>
+    <button>Submit</button>
 </form>
 ```
 
@@ -120,7 +124,7 @@ final class BackInStockNotificationType extends AbstractResourceType
 ```twig
 {{ form_start(form) }}
     {{ form_row(form.email) }}
-    <button>{{ 'app.ui.notify_me'|trans }}</button>
+    <button>{{ 'app.ui.submit'|trans }}</button>
 {{ form_end(form) }}
 ```
 
@@ -158,7 +162,7 @@ public function setChannel(ChannelInterface $channel): void
 {% extends '@!SyliusShop/Product/show.html.twig' %}
 {% block main %}
     {{ parent() }}
-    <button>Notify me</button>
+    <div>{# feature widget #}</div>
 {% endblock %}
 ```
 
@@ -168,8 +172,8 @@ public function setChannel(ChannelInterface $channel): void
 sylius_twig_hooks:
     hooks:
         sylius_shop.product.show.content.info:
-            back_in_stock_button:
-                template: 'shop/product/back_in_stock_button.html.twig'
+            app_<feature>_widget:
+                template: 'shop/product/<feature>_widget.html.twig'
                 priority: 100
 ```
 
@@ -182,7 +186,7 @@ sylius_twig_hooks:
 ```php
 public function up(Schema $schema): void
 {
-    $this->addSql('CREATE TABLE app_back_in_stock_notification (id INT NOT NULL, ...)');
+    $this->addSql('CREATE TABLE app_<alias> (id INT NOT NULL, ...)');
 }
 ```
 
@@ -205,14 +209,13 @@ Then review the generated file. Adjust only if diff is wrong.
 ```yaml
 sylius_grid:
     grids:
-        app_admin_back_in_stock_notification:
+        app_admin_<alias>:
             driver:
                 name: doctrine/orm
                 options:
-                    class: App\Entity\BackInStockNotification
+                    class: <AppNs>\Entity\<Name>
             fields:
                 email: { type: string, label: app.ui.email }
-                product: { type: twig, options: { template: 'admin/grid/field/product.html.twig' } }
                 createdAt: { type: datetime, label: sylius.ui.created_at }
             actions:
                 main:
@@ -230,11 +233,11 @@ sylius_grid:
 ✅ Right:
 
 ```php
-final class BackInStockNotificationFixture extends AbstractFixture
+final class <Name>Fixture extends AbstractFixture
 {
     public function getName(): string
     {
-        return 'app_back_in_stock_notification';
+        return 'app_<alias>';
     }
 
     protected function configureOptionsNode(ArrayNodeDefinition $optionsNode): void
@@ -249,8 +252,8 @@ final class BackInStockNotificationFixture extends AbstractFixture
     public function load(array $options): void
     {
         for ($i = 0; $i < $options['amount']; ++$i) {
-            $notif = $this->factory->createNew();
-            $this->repository->add($notif);
+            $entity = $this->factory->createNew();
+            $this->repository->add($entity);
         }
     }
 }
@@ -265,71 +268,71 @@ Playwright spec is the mandatory acceptance gate (see SKILL.md workflow step 11)
 ✅ Optional Behat example:
 
 ```gherkin
-Feature: Subscribing to back-in-stock notification
-    In order to know when product returns
+Feature: Doing the thing
+    In order to achieve some outcome
     As a Customer
-    I want to subscribe to a notification
+    I want to perform the feature's primary action
 
     Background:
         Given the store operates on a single channel in "United States"
-        And there is a product "T-Shirt" that is out of stock
+        And the precondition for the feature is met
 
-    Scenario: Subscribing with email
-        When I am browsing the product "T-Shirt"
-        And I subscribe to back-in-stock with email "buyer@example.com"
-        Then I should be notified that subscription was created
+    Scenario: Happy path
+        When I am browsing the relevant page
+        And I perform the feature's action
+        Then I should see the expected outcome
 ```
 
 **Why:** Behat is Sylius's classic regression net, but Playwright covers UI + listener + email end-to-end. Pick the one that fits the feature shape; do not require both.
 
-## 11. Doctrine preUpdate for inventory
+## 11. Doctrine preUpdate for a field-level trigger
 
 ❌ Wrong:
 
 ```php
 public function preUpdate(PreUpdateEventArgs $args): void
 {
-    if (!$args->hasChangedField('onHand')) return;
-    // notify...
+    if (!$args->hasChangedField('<field>')) return;
+    // side effect...
 }
 ```
 
-✅ Right (Sylius event):
+✅ Right (Sylius event, when one exists):
 
 ```php
 public static function getSubscribedEvents(): array
 {
-    return ['sylius.product_variant.post_update' => 'onUpdate'];
+    return ['sylius.<host>.post_update' => 'onUpdate'];
 }
 ```
 
-✅ Right (inventory needs UoW - `onFlush`):
+✅ Right (no event, needs UoW - `onFlush`):
 
 ```php
 public function onFlush(OnFlushEventArgs $args): void
 {
     $uow = $args->getObjectManager()->getUnitOfWork();
     foreach ($uow->getScheduledEntityUpdates() as $entity) {
-        if (!$entity instanceof ProductVariantInterface) continue;
+        if (!$entity instanceof <Entity>Interface) continue;
         $changes = $uow->getEntityChangeSet($entity);
-        if (!isset($changes['onHand'])) continue;
-        [$old, $new] = $changes['onHand'];
-        if ($old <= 0 && $new > 0) {
-            $this->messageBus->dispatch(new ProductBackInStock($entity->getCode()));
+        if (!isset($changes['<field>'])) continue;
+        [$old, $new] = $changes['<field>'];
+        if (/* trigger condition on $old -> $new */) {
+            $this->messageBus->dispatch(new <X>Triggered($entity->getCode()));
         }
     }
 }
 ```
 
-**Why:** `preUpdate` misses cases (hold release, direct UPDATE via custom code). `onFlush` + UoW catches all paths. Sylius event preferred when one exists.
+**Why:** `preUpdate` misses cases (indirect updates, direct UPDATE via custom code). `onFlush` + UoW catches all paths. Sylius event preferred when one exists. `reference/worked-example.md` has this pattern filled in for the stock-crossing-zero case.
 
 ## 12. Sync mail loop
 
 ❌ Wrong:
 
 ```php
-foreach ($subscribers as $s) {
-    $this->sender->send('back_in_stock', [$s->getEmail()], ['variant' => $variant]);
+foreach ($recipients as $r) {
+    $this->sender->send('app_<code>', [$r->getEmail()], [...]);
 }
 ```
 
@@ -337,16 +340,16 @@ foreach ($subscribers as $s) {
 
 ✅ Right:
 
-Listener dispatches `ProductBackInStock` message. Handler:
+Listener dispatches a message. Handler:
 
 ```php
 #[AsMessageHandler]
-final class ProductBackInStockHandler
+final class <X>Handler
 {
-    public function __invoke(ProductBackInStock $message): void
+    public function __invoke(<X>Triggered $message): void
     {
-        foreach ($this->repository->findByVariantCode($message->variantCode) as $s) {
-            $this->sender->send('back_in_stock', [$s->getEmail()], [...]);
+        foreach ($this->repository->findByCode($message->code) as $r) {
+            $this->sender->send('app_<code>', [$r->getEmail()], [...]);
         }
     }
 }
@@ -387,7 +390,7 @@ public function setCreatedAt(\DateTimeImmutable $createdAt): void
 ❌ Wrong:
 
 ```php
-class BackInStockSubscription
+class <Name>
 {
     #[ORM\Column]
     private string $email;
@@ -400,7 +403,7 @@ class BackInStockSubscription
 ✅ Right:
 
 ```php
-class BackInStockSubscription
+class <Name>
 {
     #[ORM\Column]
     private string $email;
@@ -421,17 +424,17 @@ Mailer dispatch:
 
 ```php
 $this->sender->send(
-    'back_in_stock',
-    [$subscription->getEmail()],
+    'app_<code>',
+    [$entity->getEmail()],
     [
-        'subscription' => $subscription,
-        'channel' => $subscription->getChannel(),
-        'locale' => $subscription->getLocaleCode(),
+        'entity' => $entity,
+        'channel' => $entity->getChannel(),
+        'locale' => $entity->getLocaleCode(),
     ],
 );
 ```
 
-Email template renders strings via `'...'|trans({}, 'messages', subscription.localeCode)`.
+Email template renders strings via `'...'|trans({}, 'messages', entity.localeCode)`.
 
 **Why:** User signed up in locale `pl_PL` on channel `FASHION_WEB`. Mailer rendered later (often async, often on different request) has no implicit locale/channel context. Persisting both pins render fidelity. `localeCode` length 16 matches Sylius core convention (`en_US`, `pt_BR_xx`).
 
@@ -442,7 +445,7 @@ Email template renders strings via `'...'|trans({}, 'messages', subscription.loc
 ```yaml
 sylius_grid:
     grids:
-        app_admin_back_in_stock_subscription:
+        app_admin_<alias>:
             fields:
                 createdAt:
                     type: twig
@@ -455,7 +458,7 @@ sylius_grid:
 ```yaml
 sylius_grid:
     grids:
-        app_admin_back_in_stock_subscription:
+        app_admin_<alias>:
             fields:
                 createdAt:
                     type: twig
@@ -498,19 +501,19 @@ Applies to all Sylius core resources: `Product`, `ProductVariant`, `Channel`, `C
 ❌ Wrong:
 
 ```twig
-<form method="post" action="{{ path('app_shop_back_in_stock_subscribe') }}">
+<form method="post" action="{{ path('<route>') }}">
     {{ form_row(form.email) }}
     <input type="hidden" name="{{ form._token.vars.full_name }}" value="{{ form._token.vars.value }}">
-    <button>Notify me</button>
+    <button>Submit</button>
 </form>
 ```
 
 ✅ Right:
 
 ```twig
-{{ form_start(form, {action: path('app_shop_back_in_stock_subscribe')}) }}
+{{ form_start(form, {action: path('<route>')}) }}
     {{ form_row(form.email) }}
-    <button>{{ 'app.ui.notify_me'|trans }}</button>
+    <button>{{ 'app.ui.submit'|trans }}</button>
 {{ form_end(form) }}
 ```
 
@@ -545,11 +548,11 @@ private string $localeCode;
 ❌ Wrong (file present, no yaml):
 
 ```php
-final class BackInStockNotificationType extends AbstractResourceType
+final class <Name>Type extends AbstractResourceType
 {
     protected function getBlockPrefix(): string
     {
-        return 'app_back_in_stock_notification';
+        return 'app_<alias>';
     }
 }
 ```
@@ -562,23 +565,19 @@ _instanceof:
         autowire: false
 ```
 
-Symfony Form factory falls back to `new BackInStockNotificationType()` → fatal: "Too few arguments to function AbstractResourceType::__construct(), 0 passed".
+Symfony Form factory falls back to `new <Name>Type()` → fatal: "Too few arguments to function AbstractResourceType::__construct(), 0 passed".
 
 ✅ Right:
 
 ```yaml
-# config/services.yaml
+# config/services/app_<feature>.yaml
 services:
-    app.form.type.back_in_stock_notification:
-        class: App\Form\Type\BackInStock\BackInStockNotificationType
+    <AppNs>\Form\Type\<Feature>\<Name>Type:
         arguments:
-            - 'App\Entity\BackInStock\BackInStockNotification'
+            - '<AppNs>\Entity\<Feature>\<Name>'
             - ['sylius']
         tags:
             - { name: form.type }
-
-    App\Form\Type\BackInStock\BackInStockNotificationType:
-        alias: app.form.type.back_in_stock_notification
 ```
 
 **Why:** `_instanceof: autowire: false` silently disables autowire for every `AbstractResourceType` descendant. `debug:container` looks normal - there is no service to fail. Symfony's fallback to `new <FQCN>()` then dies at first form render. Static checks all green.
@@ -588,8 +587,8 @@ services:
 ❌ Wrong:
 
 ```php
-#[AsTwigComponent('app_back_in_stock')]
-final class BackInStockSubscribeComponent
+#[AsTwigComponent('app_<feature>')]
+final class <X>Component
 {
     public ?string $template = null;
 }
@@ -601,18 +600,18 @@ Hook config:
 sylius_twig_hooks:
     hooks:
         sylius_shop.product.show.content.info:
-            back_in_stock:
-                component: 'App\Twig\Component\BackInStockSubscribeComponent'
-                template: 'shop/product/back_in_stock.html.twig'
+            app_<feature>:
+                component: '<AppNs>\Twig\Component\<X>Component'
+                template: 'shop/product/<feature>.html.twig'
 ```
 
-The `template:` in hook config binds to the component's public `$template` prop - does NOT redirect the renderer. UX TwigComponent then tries to auto-resolve `templates/components/BackInStockSubscribeComponent.html.twig` and 404s.
+The `template:` in hook config binds to the component's public `$template` prop - does NOT redirect the renderer. UX TwigComponent then tries to auto-resolve `templates/components/<X>Component.html.twig` and 404s.
 
 ✅ Right:
 
 ```php
-#[AsTwigComponent('app_back_in_stock', template: 'shop/product/back_in_stock.html.twig')]
-final class BackInStockSubscribeComponent
+#[AsTwigComponent('app_<feature>', template: 'shop/product/<feature>.html.twig')]
+final class <X>Component
 {
 }
 ```
@@ -627,7 +626,7 @@ final class BackInStockSubscribeComponent
 public function onFlush(OnFlushEventArgs $args): void
 {
     // ... detect change ...
-    $this->bus->dispatch(new ProductBackInStock($code));
+    $this->bus->dispatch(new <X>Triggered($code));
 }
 ```
 
@@ -637,7 +636,7 @@ Or:
 public function onFlush(OnFlushEventArgs $args): void
 {
     register_shutdown_function(function () use ($code) {
-        $this->bus->dispatch(new ProductBackInStock($code));
+        $this->bus->dispatch(new <X>Triggered($code));
     });
 }
 ```
@@ -651,11 +650,11 @@ public function onFlush(OnFlushEventArgs $args): void
 {
     $uow = $args->getObjectManager()->getUnitOfWork();
     foreach ($uow->getScheduledEntityUpdates() as $entity) {
-        if (!$entity instanceof ProductVariantInterface) continue;
+        if (!$entity instanceof <Entity>Interface) continue;
         $changes = $uow->getEntityChangeSet($entity);
-        if (!isset($changes['onHand'])) continue;
-        [$old, $new] = $changes['onHand'];
-        if ($old <= 0 && $new > 0) {
+        if (!isset($changes['<field>'])) continue;
+        [$old, $new] = $changes['<field>'];
+        if (/* trigger condition */) {
             $this->collected[] = $entity->getCode();
         }
     }
@@ -664,7 +663,7 @@ public function onFlush(OnFlushEventArgs $args): void
 public function postFlush(PostFlushEventArgs $args): void
 {
     foreach ($this->collected as $code) {
-        $this->bus->dispatch(new ProductBackInStock($code));
+        $this->bus->dispatch(new <X>Triggered($code));
     }
     $this->collected = [];
 }
@@ -677,8 +676,8 @@ public function postFlush(PostFlushEventArgs $args): void
 ❌ Wrong:
 
 ```twig
-<h1>Back in stock</h1>
-<p>{{ variant.product.name }} is back.</p>
+<h1>Subject line</h1>
+<p>{{ entity.someField }} happened.</p>
 ```
 
 Or extends layout but missing a block:
@@ -691,11 +690,11 @@ Or extends layout but missing a block:
 Or top-level `set`:
 
 ```twig
-{% set translation_locale = notification.localeCode %}
+{% set translation_locale = entity.localeCode %}
 {% extends '@SyliusCore/Email/layout.html.twig' %}
 
 {% block subject %}
-    {{ 'app.email.x.subject'|trans({}, 'messages', translation_locale) }}
+    {{ 'app.email.<code>.subject'|trans({}, 'messages', translation_locale) }}
 {% endblock %}
 ```
 
@@ -707,13 +706,13 @@ Sylius mailer renders `subject` block standalone → top-level `set` never runs 
 {% extends '@SyliusCore/Email/layout.html.twig' %}
 
 {% block subject %}
-    {% set translation_locale = notification.localeCode %}
-    {{ 'app.email.x.subject'|trans({}, 'messages', translation_locale) }}
+    {% set translation_locale = entity.localeCode %}
+    {{ 'app.email.<code>.subject'|trans({}, 'messages', translation_locale) }}
 {% endblock %}
 
 {% block content %}
-    {% set translation_locale = notification.localeCode %}
-    <p>{{ 'app.email.x.body'|trans({'%product%': variant.product.name}, 'messages', translation_locale) }}</p>
+    {% set translation_locale = entity.localeCode %}
+    <p>{{ 'app.email.<code>.body'|trans({}, 'messages', translation_locale) }}</p>
 {% endblock %}
 ```
 
@@ -724,21 +723,20 @@ Sylius mailer renders `subject` block standalone → top-level `set` never runs 
 ❌ Wrong:
 
 ```php
-$this->sender->send('back_in_stock', [$notification->getEmail()], [
-    'notification' => $notification,
+$this->sender->send('app_<code>', [$entity->getEmail()], [
+    'entity' => $entity,
 ]);
 ```
 
 ✅ Right:
 
 ```php
-$channel = $this->channelRepository->findOneByCode($notification->getChannelCode());
+$channel = $this->channelRepository->findOneByCode($entity->getChannelCode());
 
-$this->sender->send('back_in_stock', [$notification->getEmail()], [
-    'notification' => $notification,
-    'variant' => $variant,
+$this->sender->send('app_<code>', [$entity->getEmail()], [
+    'entity' => $entity,
     'channel' => $channel,
-    'localeCode' => $notification->getLocaleCode(),
+    'localeCode' => $entity->getLocaleCode(),
 ]);
 ```
 
@@ -789,16 +787,16 @@ Plus print to user: "Run `bin/console cache:clear` manually - new translation ca
 ```yaml
 sylius_resource:
     resources:
-        app.back_in_stock_notification:
+        app.<alias>:
             classes:
-                factory: App\Factory\BackInStockNotificationFactory
+                factory: <AppNs>\Factory\<Name>Factory
 ```
 
 ```php
-final class BackInStockNotificationFactory implements BackInStockNotificationFactoryInterface
+final class <Name>Factory implements <Name>FactoryInterface
 {
     public function __construct(
-        private BackInStockNotificationRepositoryInterface $repository,
+        private <Name>RepositoryInterface $repository,
     ) {
     }
 }
@@ -811,29 +809,29 @@ At runtime: `TypeError: must be of type FactoryInterface, string given`. `debug:
 ```yaml
 sylius_resource:
     resources:
-        app.back_in_stock_notification:
+        app.<alias>:
             classes:
-                model: App\Entity\BackInStock\BackInStockNotification
+                model: <AppNs>\Entity\<Feature>\<Name>
                 # no factory: Sylius wires default Factory automatically
 ```
 
 ✅ Right (custom factory genuinely needed):
 
 ```php
-final class BackInStockNotificationFactory implements BackInStockNotificationFactoryInterface
+final class <Name>Factory implements <Name>FactoryInterface
 {
     public function __construct(private string $className) {}
 
-    public function createNew(): BackInStockNotificationInterface
+    public function createNew(): <Name>Interface
     {
         return new ($this->className)();
     }
 
-    public function createForVariant(ProductVariantInterface $variant): BackInStockNotificationInterface
+    public function createForVariant(ProductVariantInterface $variant): <Name>Interface
     {
-        $notification = $this->createNew();
-        $notification->setVariant($variant);
-        return $notification;
+        $entity = $this->createNew();
+        $entity->setVariant($variant);
+        return $entity;
     }
 }
 ```
@@ -842,33 +840,33 @@ final class BackInStockNotificationFactory implements BackInStockNotificationFac
 
 ## 27. Duplicate resource segment in route prefix
 
-❌ Wrong (`config/routes/admin/back_in_stock_notification.yaml`):
+❌ Wrong (`config/routes/admin/<alias>.yaml`):
 
 ```yaml
-app_admin_back_in_stock_notification:
+app_admin_<alias>:
     resource: |
-        alias: app.back_in_stock_notification
+        alias: app.<alias>
         section: admin
         ...
     type: sylius.resource
-    prefix: '/%sylius_admin.path_name%/back-in-stock-notifications'
+    prefix: '/%sylius_admin.path_name%/<alias-plural>'
 ```
 
-Resulting routes: `/admin/back-in-stock-notifications/back-in-stock-notifications/`, `/admin/back-in-stock-notifications/back-in-stock-notifications/new`, …
+Resulting routes: `/admin/<alias-plural>/<alias-plural>/`, `/admin/<alias-plural>/<alias-plural>/new`, …
 
 ✅ Right:
 
 ```yaml
-app_admin_back_in_stock_notification:
+app_admin_<alias>:
     resource: |
-        alias: app.back_in_stock_notification
+        alias: app.<alias>
         section: admin
         ...
     type: sylius.resource
     prefix: '/%sylius_admin.path_name%'
 ```
 
-**Why:** The `sylius.resource` route loader auto-derives the path segment from the resource alias plural (`back_in_stock_notification` → `back-in-stock-notifications`). Outer `prefix:` must contain ONLY the admin/shop root, never the resource segment.
+**Why:** The `sylius.resource` route loader auto-derives the path segment from the resource alias plural. Outer `prefix:` must contain ONLY the admin/shop root, never the resource segment.
 
 ## 28. Listener collecting autoincrement ids
 
@@ -878,7 +876,7 @@ app_admin_back_in_stock_notification:
 public function onFlush(OnFlushEventArgs $args): void
 {
     foreach ($uow->getScheduledEntityUpdates() as $entity) {
-        if ($entity instanceof ProductVariantInterface) {
+        if ($entity instanceof <Entity>Interface) {
             $this->collected[] = $entity->getId();
         }
     }
@@ -887,7 +885,7 @@ public function onFlush(OnFlushEventArgs $args): void
 public function postFlush(PostFlushEventArgs $args): void
 {
     foreach ($this->collected as $id) {
-        $this->bus->dispatch(new ProductBackInStock($id));
+        $this->bus->dispatch(new <X>Triggered($id));
     }
 }
 ```
@@ -897,13 +895,13 @@ public function postFlush(PostFlushEventArgs $args): void
 ```php
 $this->collected[] = (string) $entity->getCode();
 // ...
-$this->bus->dispatch(new ProductBackInStock($code));
+$this->bus->dispatch(new <X>Triggered($code));
 ```
 
 Handler:
 
 ```php
-$variant = $this->variants->findOneBy(['code' => $message->variantCode]);
+$entity = $this->repository->findOneBy(['code' => $message->code]);
 ```
 
 **Why:** IDs change across env restores, fixture reloads, snapshots, replays. Code/UUID is the stable business identifier. Indexed-column `findOneBy(['code' => …])` is the same cost as `find($id)`. **Exception:** entities without natural codes (`Adjustment`, `OrderItemUnit`) - use id, document why.
@@ -915,9 +913,9 @@ $variant = $this->variants->findOneBy(['code' => $message->variantCode]);
 ```yaml
 sylius_mailer:
     emails:
-        back_in_stock:
-            subject: app.email.back_in_stock.subject
-            template: 'email/back_in_stock.html.twig'
+        <code>:
+            subject: app.email.<code>.subject
+            template: 'email/<code>.html.twig'
 ```
 
 ✅ Right:
@@ -925,12 +923,12 @@ sylius_mailer:
 ```yaml
 sylius_mailer:
     emails:
-        app_back_in_stock:
-            subject: app.email.back_in_stock.subject
-            template: 'email/back_in_stock.html.twig'
+        app_<code>:
+            subject: app.email.<code>.subject
+            template: 'email/<code>.html.twig'
 ```
 
-`$this->sender->send('app_back_in_stock', ...)`.
+`$this->sender->send('app_<code>', ...)`.
 
 **Why:** Sylius core ships codes like `order_confirmation`, `password_reset_token`, `customer_registration`, `contact_request`. Bare app code risks future collision when Sylius adds a new built-in. `app_` prefix isolates the namespace cheaply.
 
@@ -970,7 +968,7 @@ final class Version20260519120000 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Create app_back_in_stock_notification table.';
+        return 'Create app_<alias> table.';
     }
 
     public function up(Schema $schema): void
@@ -992,33 +990,33 @@ final class Version20260519120000 extends AbstractMigration
 ❌ Wrong:
 
 ```
-src/Twig/Components/BackInStockSubscribeComponent.php
-namespace App\Twig\Components;
+src/Twig/Components/<X>Component.php
+namespace <AppNs>\Twig\Components;
 ```
 
 ✅ Right:
 
 ```
-src/TwigComponent/BackInStock/BackInStockSubscribeComponent.php
-namespace App\TwigComponent\BackInStock;
+src/TwigComponent/<Section>/<X>Component.php
+namespace <AppNs>\TwigComponent\<Section>;
 ```
 
-**Why:** Sylius bundle convention is `Sylius\Bundle\<X>Bundle\TwigComponent\`. App-level mirrors as `App\TwigComponent\<Section>\`. Plugin authors and core devs look in the Sylius-convention path; UX default breaks the contract.
+**Why:** Sylius bundle convention is `Sylius\Bundle\<X>Bundle\TwigComponent\`. App-level mirrors as `<AppNs>\TwigComponent\<Section>\`. Plugin authors and core devs look in the Sylius-convention path; UX default breaks the contract.
 
 ## 32. Single-step Playwright spec
 
-❌ Wrong: spec drives only the subscribe step, asserts only the success flash. Misses restock + email + post-state.
+❌ Wrong: spec drives only the entry step, asserts only the success flash. Misses the downstream trigger, the side effect, and the post-state.
 
-✅ Right: spec covers the whole user journey - setup → subscribe → success flash → restock → email assertion via profiler MCP → post-state widget hidden.
+✅ Right: spec covers the whole user journey - setup → primary action → success flash → downstream trigger → side-effect assertion via profiler MCP → post-state UI check. `reference/worked-example.md` has a full instance.
 
-**Why:** Bugs surface across step boundaries (listener idempotency, stale cache after state change, mailer ctx wrong, locale mismatch on async render). A spec that stops at step 3 of a 6-step flow rubber-stamps regressions.
+**Why:** Bugs surface across step boundaries (listener idempotency, stale cache after state change, mailer ctx wrong, locale mismatch on async render). A spec that stops halfway through the flow rubber-stamps regressions.
 
 ## 33. Explicit service def in non-excluded dir
 
-❌ Wrong: `config/services/app_back_in_stock_notification.yaml` declares form type + listener with tags, but `config/services.yaml` has:
+❌ Wrong: `config/services/app_<feature>.yaml` declares a form type + listener with tags, but `config/services.yaml` has:
 
 ```yaml
-App\:
+<AppNs>\:
     resource: '../src/'
     exclude:
         - '../src/Entity/'
@@ -1026,15 +1024,15 @@ App\:
 ```
 
 Symptoms (silent):
-- Form type: `new BackInStockNotificationType()` → `Too few arguments to function AbstractResourceType::__construct()` at first render.
-- Listener: `doctrine.event_listener` tag dropped. Restock event fires, listener never runs. No mailer dispatch.
+- Form type: `new <Name>Type()` → `Too few arguments to function AbstractResourceType::__construct()` at first render.
+- Listener: `doctrine.event_listener` tag dropped. The triggering event fires, listener never runs. No downstream dispatch.
 
 `debug:container` may show the class with a `form.type` tag (autoconfigure from `_instanceof`), masking the failure.
 
 ✅ Right:
 
 ```yaml
-App\:
+<AppNs>\:
     resource: '../src/'
     exclude:
         - '../src/Entity/'
@@ -1046,27 +1044,27 @@ App\:
         - '../src/Factory/'
 ```
 
-**Why:** `App\:` glob autoregister loads after `imports:` and silently re-binds every class found under `resource:`, dropping any explicit `arguments` / `tags`. Adding the dir to `exclude:` keeps the autoregister out of that subtree. Always pair an explicit-def write with an exclude-list update.
+**Why:** `<AppNs>\:` glob autoregister loads after `imports:` and silently re-binds every class found under `resource:`, dropping any explicit `arguments` / `tags`. Adding the dir to `exclude:` keeps the autoregister out of that subtree. Always pair an explicit-def write with an exclude-list update.
 
 ## 34. Playwright spec mutating via raw SQL
 
 ❌ Wrong (inside a Playwright spec):
 
 ```ts
-execSync(`bin/console doctrine:query:sql "UPDATE sylius_product_variant SET on_hand = 10 WHERE code = 'TSHIRT_S'"`);
+execSync(`bin/console doctrine:query:sql "UPDATE app_<table> SET <field> = <value> WHERE code = '<code>'"`);
 ```
 
-Spec asserts `notified_at IS NOT NULL` later. Fails: listener never fired, handler never dispatched, mailer never sent.
+Spec asserts a handler-written DB flag later. Fails: listener never fired, handler never dispatched, side effect never happened.
 
 ✅ Right:
 
 ```ts
-execSync(`bin/console app:variant:restock TSHIRT_S 10`);
+execSync(`bin/console <project-specific-command> <code> <value>`);
 ```
 
-Or drive the admin UI flow via Playwright (login → variant edit → save). Or hit an API endpoint that mutates through ORM.
+Or drive the admin UI flow via Playwright (login → edit → save). Or hit an API endpoint that mutates through ORM. `reference/worked-example.md` has a concrete restock command.
 
-**Why:** Doctrine listeners (`onFlush`, `postFlush`, `preUpdate`, etc.) hook into the UnitOfWork. Raw SQL goes straight to the DB driver, never touches UoW, listeners never see the change. Iter-7 documented this in a postmortem; iter-8 spec violated it. Lesson now baked in as rule.
+**Why:** Doctrine listeners (`onFlush`, `postFlush`, `preUpdate`, etc.) hook into the UnitOfWork. Raw SQL goes straight to the DB driver, never touches UoW, listeners never see the change.
 
 ## 35. Ad-hoc cache:clear via Bash
 
@@ -1082,11 +1080,11 @@ bin/console cache:clear
 
 Call MCP tool `sylius_cache_clear` exactly once before Playwright. The MCP tool is the boundary gate.
 
-**Why:** Iter-7 tried to carve a Bash exception scoped to the verify step. Iter-8 showed the global rule won anyway - Claude refused the scoped clear. Moving the action to an MCP tool sidesteps the rule entirely; the tool is a mechanical override, not a shell call.
+**Why:** The harness's Bash classifier enforces the CLAUDE.md rule at the shell level - there's no scoped exception to carve out for verify or Playwright prep. Moving the action to an MCP tool sidesteps the rule entirely; the tool is a mechanical override, not a shell call.
 
 ## 36. Leaf hook target without parent visibility check
 
-❌ Wrong: picking `sylius_shop.product.show.content.info.summary.add_to_cart` for a back-in-stock widget because the name suggests product page placement.
+❌ Wrong: picking `sylius_shop.product.show.content.info.summary.add_to_cart` for a widget that's only relevant when the variant is unavailable, because the name suggests product page placement.
 
 Parent template:
 
@@ -1098,7 +1096,7 @@ Parent template:
 {% endif %}
 ```
 
-Widget for out-of-stock variants → hook never renders. Silent failure.
+Widget meant for that OOS branch → hook never renders. Silent failure.
 
 ✅ Right:
 
@@ -1108,27 +1106,27 @@ Call MCP `sylius_hooks_resolve_for_visibility` with feature state (`oos`):
 sylius_twig_hooks:
     hooks:
         sylius_shop.product.show.content.info.summary:   # parent - unconditional
-            app_back_in_stock_widget:
-                template: 'shop/product/back_in_stock_widget.html.twig'
+            app_<feature>_widget:
+                template: 'shop/product/<feature>_widget.html.twig'
 ```
 
 **Why:** hook names suggest placement but not visibility. Parent template guards short-circuit entire sub-trees. For OOS-only / in-stock-only features, the relevant branch may be dead. Resolver tool returns hook targets whose parent renders in the requested state. Never guess from name suffix.
 
-## 37. notified_at as email proof
+## 37. Handler-written DB flag as email proof
 
 ❌ Wrong (Playwright spec):
 
 ```ts
-const row = await db.query('SELECT notified_at FROM app_back_in_stock_notification WHERE email = ?', [email]);
+const row = await db.query('SELECT notified_at FROM app_<alias> WHERE email = ?', [email]);
 expect(row.notified_at).not.toBeNull();
 ```
 
 Handler:
 
 ```php
-foreach ($notifications as $notification) {
-    $this->sender->send('app_back_in_stock', [$notification->getEmail()], $context);
-    $notification->markNotified();
+foreach ($entities as $entity) {
+    $this->sender->send('app_<code>', [$entity->getEmail()], $context);
+    $entity->markNotified();
 }
 ```
 
@@ -1139,12 +1137,12 @@ With `MAILER_DSN=null://null`, `sender->send()` swallows silently. Handler still
 ```ts
 const messages = await fetch('http://localhost:8025/api/v1/messages').then(r => r.json());
 const match = messages.messages.find(m =>
-    m.To.some(t => t.Address === email) && m.Subject.includes('back in stock')
+    m.To.some(t => t.Address === email) && m.Subject.includes('<expected subject fragment>')
 );
 expect(match).toBeDefined();
 ```
 
-Or via Sylius Mate profiler MCP when restock is HTTP-triggered:
+Or via Sylius Mate profiler MCP when the trigger is HTTP-driven:
 
 ```
 profiler_request_detail(token).mailer → assert message present
@@ -1152,16 +1150,16 @@ profiler_request_detail(token).mailer → assert message present
 
 If neither inspectable target available, print `// TODO: assert email via mailpit/profiler` - do not green-light the spec on a DB check.
 
-**Why:** the handler's success path doesn't depend on transport success. `notified_at` proves the handler ran, not that the email left the building. Iter-9 false-positive lesson.
+**Why:** the handler's success path doesn't depend on transport success. A handler-written flag proves the handler ran, not that the email left the building.
 
 ## 38. RuntimeException for not-found in controller
 
 ❌ Wrong:
 
 ```php
-$variant = $this->variants->findOneBy(['code' => $code]);
-if (null === $variant) {
-    throw new \RuntimeException('Variant not found.');
+$entity = $this->repository->findOneBy(['code' => $code]);
+if (null === $entity) {
+    throw new \RuntimeException('Not found.');
 }
 ```
 
@@ -1172,8 +1170,8 @@ Symfony renders HTTP 500 with stack trace.
 ```php
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-$variant = $this->variants->findOneBy(['code' => $code]);
-if (null === $variant) {
+$entity = $this->repository->findOneBy(['code' => $code]);
+if (null === $entity) {
     throw new NotFoundHttpException();
 }
 ```
@@ -1187,9 +1185,9 @@ if (null === $variant) {
 ```yaml
 sylius_mailer:
     emails:
-        app_back_in_stock:
-            subject: 'Product back in stock'
-            template: 'email/app_back_in_stock.html.twig'
+        app_<code>:
+            subject: 'Some literal English subject'
+            template: 'email/app_<code>.html.twig'
 ```
 
 ✅ Right:
@@ -1197,9 +1195,9 @@ sylius_mailer:
 ```yaml
 sylius_mailer:
     emails:
-        app_back_in_stock:
-            subject: app.email.back_in_stock.subject
-            template: 'email/app_back_in_stock.html.twig'
+        app_<code>:
+            subject: app.email.<code>.subject
+            template: 'email/app_<code>.html.twig'
 ```
 
 Plus translation entry in `translations/messages.<locale>.yaml`.
@@ -1211,7 +1209,7 @@ Plus translation entry in `translations/messages.<locale>.yaml`.
 ❌ Wrong:
 
 ```php
-final class BackInStockNotificationType extends AbstractResourceType
+final class <Name>Type extends AbstractResourceType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
@@ -1243,20 +1241,20 @@ public function buildForm(FormBuilderInterface $builder, array $options): void
 
 ```php
 #[AsMessageHandler]
-final class ProductBackInStockHandler
+final class <X>Handler
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private BackInStockNotificationRepositoryInterface $notifications,
+        private <Name>RepositoryInterface $entities,
         private SenderInterface $sender,
     ) {
     }
 
-    public function __invoke(ProductBackInStock $m): void
+    public function __invoke(<X>Triggered $m): void
     {
-        foreach ($this->notifications->findByVariantCode($m->variantCode) as $n) {
+        foreach ($this->entities->findByCode($m->code) as $entity) {
             $this->sender->send(...);
-            $n->markNotified();
+            $entity->markNotified();
             $this->em->flush();
         }
     }
@@ -1267,17 +1265,17 @@ final class ProductBackInStockHandler
 
 ```php
 public function __construct(
-    private BackInStockNotificationRepositoryInterface $notifications,
+    private <Name>RepositoryInterface $entities,
     private SenderInterface $sender,
 ) {
 }
 
-public function __invoke(ProductBackInStock $m): void
+public function __invoke(<X>Triggered $m): void
 {
-    foreach ($this->notifications->findByVariantCode($m->variantCode) as $n) {
+    foreach ($this->entities->findByCode($m->code) as $entity) {
         $this->sender->send(...);
-        $n->markNotified();
-        $this->notifications->add($n);  // persist+flush idempotent for managed entities
+        $entity->markNotified();
+        $this->entities->add($entity);  // persist+flush idempotent for managed entities
     }
 }
 ```
@@ -1289,13 +1287,13 @@ public function __invoke(ProductBackInStock $m): void
 ❌ Wrong:
 
 ```php
-final class SubscribeAction extends AbstractController
+final class <X>Action extends AbstractController
 {
     public function __invoke(Request $request): Response
     {
-        $form = $this->createForm(BackInStockNotificationType::class);
+        $form = $this->createForm(<Name>Type::class);
         // ...
-        $this->addFlash('success', 'app.flashes.back_in_stock.subscribed');
+        $this->addFlash('success', 'app.flashes.<feature>.done');
         return $this->redirect($this->generateUrl('sylius_shop_product_show', [...]));
     }
 }
@@ -1304,7 +1302,7 @@ final class SubscribeAction extends AbstractController
 ✅ Right:
 
 ```php
-final class SubscribeAction
+final class <X>Action
 {
     public function __construct(
         private FormFactoryInterface $formFactory,
@@ -1314,9 +1312,9 @@ final class SubscribeAction
 
     public function __invoke(Request $request): Response
     {
-        $form = $this->formFactory->create(BackInStockNotificationType::class);
+        $form = $this->formFactory->create(<Name>Type::class);
         // ...
-        $request->getSession()->getFlashBag()->add('success', 'app.flashes.back_in_stock.subscribed');
+        $request->getSession()->getFlashBag()->add('success', 'app.flashes.<feature>.done');
         return new RedirectResponse(
             $this->urlGenerator->generate('sylius_shop_product_show', [...]),
         );
@@ -1332,11 +1330,11 @@ final class SubscribeAction
 
 ```php
 #[AsDoctrineListener(event: Events::onFlush)]
-final class ProductVariantRestockListener { }
+final class <X>Listener { }
 ```
 
 ```yaml
-App\EventListener\ProductVariantRestockListener:
+<AppNs>\EventListener\<X>Listener:
     tags:
         - { name: doctrine.event_listener, event: onFlush }
 ```
@@ -1348,11 +1346,11 @@ With `autoconfigure: true`, both registrations apply → listener fires twice pe
 ```php
 #[AsDoctrineListener(event: Events::onFlush)]
 #[AsDoctrineListener(event: Events::postFlush)]
-final class ProductVariantRestockListener { }
+final class <X>Listener { }
 ```
 
 ```yaml
-App\EventListener\ProductVariantRestockListener: ~
+<AppNs>\EventListener\<X>Listener: ~
 ```
 
 **Why:** Attribute already declares the binding; yaml tag duplicates. Once you have the attribute, never re-tag in yaml. Pattern B fallback (no attribute + `autoconfigure: false` + tag) is for autowire-excluded dirs where the attribute can't fire.
@@ -1362,22 +1360,22 @@ App\EventListener\ProductVariantRestockListener: ~
 ❌ Wrong:
 
 ```yaml
-app.form.type.back_in_stock_notification:
-    class: App\Form\Type\Notification\BackInStockNotificationType
-    arguments: ['App\Entity\Notification\BackInStockNotification', ['sylius']]
+app.form.type.<alias>:
+    class: <AppNs>\Form\Type\<Feature>\<Name>Type
+    arguments: ['<AppNs>\Entity\<Feature>\<Name>', ['sylius']]
     tags:
         - { name: form.type }
 
-App\Form\Type\Notification\BackInStockNotificationType:
-    alias: app.form.type.back_in_stock_notification
+<AppNs>\Form\Type\<Feature>\<Name>Type:
+    alias: app.form.type.<alias>
 ```
 
 ✅ Right:
 
 ```yaml
-App\Form\Type\Notification\BackInStockNotificationType:
+<AppNs>\Form\Type\<Feature>\<Name>Type:
     arguments:
-        - 'App\Entity\Notification\BackInStockNotification'
+        - '<AppNs>\Entity\<Feature>\<Name>'
         - ['sylius']
     tags:
         - { name: form.type }
@@ -1390,8 +1388,8 @@ App\Form\Type\Notification\BackInStockNotificationType:
 ❌ Wrong:
 
 ```yaml
-App\Repository\BackInStockNotificationRepositoryInterface:
-    alias: app.repository.back_in_stock_notification
+<AppNs>\Repository\<Name>RepositoryInterface:
+    alias: app.repository.<alias>
 ```
 
 …when the resource is registered:
@@ -1399,13 +1397,13 @@ App\Repository\BackInStockNotificationRepositoryInterface:
 ```yaml
 sylius_resource:
     resources:
-        app.back_in_stock_notification:
+        app.<alias>:
             classes:
-                model: App\Entity\Notification\BackInStockNotification
-                repository: App\Repository\BackInStockNotificationRepository
+                model: <AppNs>\Entity\<Feature>\<Name>
+                repository: <AppNs>\Repository\<Name>Repository
 ```
 
-✅ Right: drop the alias entirely. Sylius 2.x resource-bundle compiler pass auto-aliases interface FQCN → `app.repository.<alias>`. Verify via `bin/console debug:container --filter=BackInStockNotificationRepositoryInterface`.
+✅ Right: drop the alias entirely. Sylius 2.x resource-bundle compiler pass auto-aliases interface FQCN → `app.repository.<alias>`. Verify via `bin/console debug:container --filter=<Name>RepositoryInterface`.
 
 **Why:** Duplicate. Sylius core repos (Product, Channel, etc.) DO need manual aliases (R-CORE-REPO-ALIASES) because they aren't auto-aliased to interface FQCNs - different concern, keep those.
 
@@ -1462,21 +1460,21 @@ framework:
 
 ## 48. App\Repository sub-namespace
 
-❌ Wrong: `App\Repository\Notification\BackInStockNotificationRepository`.
+❌ Wrong: `<AppNs>\Repository\<Feature>\<Name>Repository`.
 
-✅ Right: `App\Repository\BackInStockNotificationRepository`.
+✅ Right: `<AppNs>\Repository\<Name>Repository`.
 
 Pinned convention:
 
 | Dir | Sub-NS? |
 |---|---|
-| `App\Entity\<Feature>\<X>` | ✅ |
-| `App\Form\Type\<Feature>\<X>Type` | ✅ |
-| `App\Repository\<X>Repository` | ❌ FLAT |
-| `App\Factory\<X>Factory` | ❌ FLAT |
-| `App\EventListener\<X>Listener` | ❌ FLAT |
-| `App\Message\<X>` | ❌ FLAT |
-| `App\MessageHandler\<X>Handler` | ❌ FLAT |
+| `<AppNs>\Entity\<Feature>\<X>` | ✅ |
+| `<AppNs>\Form\Type\<Feature>\<X>Type` | ✅ |
+| `<AppNs>\Repository\<X>Repository` | ❌ FLAT |
+| `<AppNs>\Factory\<X>Factory` | ❌ FLAT |
+| `<AppNs>\EventListener\<X>Listener` | ❌ FLAT |
+| `<AppNs>\Message\<X>` | ❌ FLAT |
+| `<AppNs>\MessageHandler\<X>Handler` | ❌ FLAT |
 
 **Why:** Repositories/factories/listeners/messages/handlers are infrastructure leaves - one per resource, no taxonomy benefit from nesting. Entities and form types have multiple variants per feature (Translation, Variant, Type), so sub-namespacing earns its keep there.
 
@@ -1494,12 +1492,12 @@ Pinned convention:
 
 ## 50. Hardcoded App\ namespace
 
-❌ Wrong (Elesto project - root NS = `Elesto\`):
+❌ Wrong (a project whose root namespace isn't `App\`, e.g. Elesto uses `Elesto\`):
 
 ```php
-namespace App\Entity\BackInStock;
+namespace App\Entity\<Feature>;
 
-class BackInStockNotification { }
+class <Name> { }
 ```
 
 Or in yaml:
@@ -1507,9 +1505,9 @@ Or in yaml:
 ```yaml
 sylius_resource:
     resources:
-        elesto.back_in_stock_notification:
+        elesto.<alias>:
             classes:
-                model: App\Entity\BackInStock\BackInStockNotification
+                model: App\Entity\<Feature>\<Name>
 ```
 
 `composer.json`:
@@ -1527,28 +1525,28 @@ Symbols don't resolve. Container build fails.
 ✅ Right:
 
 ```php
-namespace Elesto\Entity\BackInStock;
+namespace Elesto\Entity\<Feature>;
 
-class BackInStockNotification { }
+class <Name> { }
 ```
 
 ```yaml
 sylius_resource:
     resources:
-        elesto.back_in_stock_notification:
+        elesto.<alias>:
             classes:
-                model: Elesto\Entity\BackInStock\BackInStockNotification
+                model: Elesto\Entity\<Feature>\<Name>
 ```
 
 **Why:** Sylius-Standard is one project. `App\` is not universal. Always read `composer.json` `autoload.psr-4` first matching `src/` entry. MCP `sylius_project_profile.app_namespace` returns it. Parameterize every scaffold.
 
-## 51. Inventory listener under MSI plugin
+## 51. Field-watching listener under a decorating plugin
 
 ❌ Wrong (project has `sylius/multi-source-inventory-plugin`):
 
 ```php
 #[AsDoctrineListener(event: Events::onFlush)]
-final class ProductVariantRestockListener
+final class <X>Listener
 {
     public function onFlush(OnFlushEventArgs $args): void
     {
@@ -1562,7 +1560,7 @@ final class ProductVariantRestockListener
 }
 ```
 
-`ProductVariant.onHand` column is dead under MSI; stock changes happen on `InventorySourceStock` rows.
+`ProductVariant.onHand` column is dead under MSI; stock changes happen on `InventorySourceStock` rows instead.
 
 ✅ Right: target the MSI entity:
 
@@ -1578,7 +1576,7 @@ foreach ($uow->getScheduledEntityUpdates() as $entity) {
 }
 ```
 
-**Why:** Plugin decorations move the source of truth. Always call MCP `sylius_installed_plugins` before designing a listener / inventory checker / price service / channel resolver. Skip → ship dead code.
+**Why:** Plugin decorations move the source of truth - this is one concrete, always-true instance (MSI moves stock off `ProductVariant.onHand`), not specific to any one feature you might be building on top of it. Always call MCP `sylius_installed_plugins` before designing a listener / inventory checker / price service / channel resolver. Skip → ship dead code.
 
 ## 52. Manual service in excluded dir without explicit autowire
 
@@ -1590,16 +1588,16 @@ foreach ($uow->getScheduledEntityUpdates() as $entity) {
     resource: '../src/'
     exclude: ['../src/Controller/']
 
-<AppNs>\Controller\Shop\BackInStockSubscribeController:
+<AppNs>\Controller\Shop\<X>Controller:
     tags: ['controller.service_arguments']
 ```
 
-Sibling controllers in `services.yaml` set `autowire: false`. AI's controller inherits silently → runtime `Too few arguments`.
+Sibling controllers in `services.yaml` set `autowire: false`. This controller inherits silently → runtime `Too few arguments`.
 
 ✅ Right:
 
 ```yaml
-<AppNs>\Controller\Shop\BackInStockSubscribeController:
+<AppNs>\Controller\Shop\<X>Controller:
     autowire: true
     autoconfigure: true
     tags: ['controller.service_arguments']
@@ -1632,11 +1630,11 @@ translations/messages.pl_PL.yaml
 
 ```php
 #[AsMessageHandler]
-final class ProductBackInStockHandler
+final class <X>Handler
 {
-    public function __invoke(ProductBackInStock $m): void
+    public function __invoke(<X>Triggered $m): void
     {
-        $this->sender->send('app_back_in_stock', [...], [
+        $this->sender->send('app_<code>', [...], [
             // template uses {{ url('sylius_shop_product_show', ...) }}
         ]);
     }

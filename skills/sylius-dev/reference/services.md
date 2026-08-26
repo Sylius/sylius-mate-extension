@@ -32,15 +32,17 @@ services:
 Per-feature file example:
 
 ```yaml
-# config/services/app_back_in_stock.yaml
+# config/services/app_<feature>.yaml
 services:
-    App\Form\Type\BackInStock\BackInStockNotificationType:
+    App\Form\Type\<Feature>\<Name>Type:
         arguments:
-            - 'App\Entity\BackInStock\BackInStockNotification'
+            - 'App\Entity\<Feature>\<Name>'
             - ['sylius']
         tags:
             - { name: form.type }
 ```
+
+A filled-in instance (`app_back_in_stock.yaml`) is in `reference/worked-example.md`.
 
 Every time the skill emits an explicit service def in a directory not currently on the `exclude:` list, that directory must be appended to `exclude:` in the same write (R-EXCLUDE-EXPLICIT-DIRS). Autoregister silently clobbers the explicit def - `arguments` dropped, `tags` dropped, `debug:container` still shows the class but wired wrong.
 
@@ -98,7 +100,7 @@ Notes:
 If a controller dir is excluded from `App\:` glob (manual defs only), the explicit service entry MUST set `autowire: true, autoconfigure: true`. `_defaults` inheritance is opaque when neighbouring defs override:
 
 ```yaml
-App\Controller\Shop\BackInStockSubscribeController:
+App\Controller\Shop\<X>Controller:
     autowire: true
     autoconfigure: true
     tags: ['controller.service_arguments']

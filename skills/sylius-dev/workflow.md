@@ -158,7 +158,7 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
 - If controller dir is excluded from `<AppNs>\:` glob (manual defs only), the explicit service entry MUST set `autowire: true, autoconfigure: true` (R-GLOB-EXCLUDED-DIR-AUTOWIRE) - `_defaults` inheritance is opaque when neighboring defs override:
 
   ```yaml
-  <AppNs>\Controller\Shop\BackInStockSubscribeController:
+  <AppNs>\Controller\Shop\<X>Controller:
       autowire: true
       autoconfigure: true
       tags: ['controller.service_arguments']
@@ -194,7 +194,7 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
 **Decision tree:**
 
 1. Sylius event exists? → tag listener on it.
-2. No event but Doctrine mutation? → for inventory use `onFlush` UnitOfWork (catches direct updates, hold releases, etc.). `preUpdate` only as last resort.
+2. No event but Doctrine mutation? → for a field-level state change use `onFlush` UnitOfWork (catches direct updates, bulk mutations, order-workflow side effects, etc.). `preUpdate` only as last resort.
 3. Side effect non-trivial (email, external call) → dispatch Messenger message in listener, do work in handler.
 
 **R-FLUSH-ORDER (mandatory split):**
@@ -209,11 +209,11 @@ public function onFlush(OnFlushEventArgs $args): void
 {
     $uow = $args->getObjectManager()->getUnitOfWork();
     foreach ($uow->getScheduledEntityUpdates() as $entity) {
-        if (!$entity instanceof ProductVariantInterface) continue;
+        if (!$entity instanceof <Entity>Interface) continue;
         $changes = $uow->getEntityChangeSet($entity);
-        if (!isset($changes['onHand'])) continue;
-        [$old, $new] = $changes['onHand'];
-        if ($old <= 0 && $new > 0) {
+        if (!isset($changes['<watched_field>'])) continue;
+        [$old, $new] = $changes['<watched_field>'];
+        if (/* $old no longer satisfies the trigger condition, $new does */) {
             $this->collected[] = (string) $entity->getCode();
         }
     }
@@ -222,13 +222,15 @@ public function onFlush(OnFlushEventArgs $args): void
 public function postFlush(PostFlushEventArgs $args): void
 {
     foreach ($this->collected as $code) {
-        $this->bus->dispatch(new ProductBackInStock($code));
+        $this->bus->dispatch(new <X>Triggered($code));
     }
     $this->collected = [];
 }
 ```
 
-**Plugin gate (R-PLUGIN-AWARENESS):** before designing the listener target, confirm `sylius_installed_plugins` results. If `sylius/multi-source-inventory-plugin` present, stock lives in `InventorySourceStockInterface` rows - Doctrine listener on `ProductVariant.onHand` is dead. Target MSI stock rows instead. Same applies to wishlist / refund / multi-currency / b2b plugin decorations.
+A filled-in instance of this exact pattern (stock crossing 0, dispatching a back-in-stock message) is in `reference/worked-example.md`.
+
+**Plugin gate (R-PLUGIN-AWARENESS):** before designing the listener target, confirm `sylius_installed_plugins` results. If `sylius/multi-source-inventory-plugin` present, stock lives in `InventorySourceStockInterface` rows - a Doctrine listener on `ProductVariant.onHand` is dead. Target MSI stock rows instead. Same applies to wishlist / refund / multi-currency / b2b plugin decorations.
 
 **Output:** Listener registered via attribute (R-DOCTRINE-LISTENER-ATTRIBUTE). Two accepted forms:
 
@@ -240,7 +242,7 @@ use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 
 #[AsDoctrineListener(event: Events::onFlush)]
 #[AsDoctrineListener(event: Events::postFlush)]
-final class ProductVariantRestockListener
+final class <X>Listener
 {
 }
 ```
@@ -254,7 +256,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
     ['name' => 'doctrine.event_listener', 'event' => 'onFlush'],
     ['name' => 'doctrine.event_listener', 'event' => 'postFlush'],
 ])]
-final class ProductVariantRestockListener
+final class <X>Listener
 {
 }
 ```
@@ -264,14 +266,14 @@ Pick one. Never both. Never combine with yaml `doctrine.event_listener` tag (fir
 services.yaml - only declare for explicit DI args, NO `doctrine.event_listener` tag (autoconfigure + attribute already register; adding the tag fires twice):
 
 ```yaml
-<AppNs>\EventListener\ProductVariantRestockListener: ~
+<AppNs>\EventListener\<X>Listener: ~
 ```
 
 Forbidden hybrid: attribute + yaml tag together + `autoconfigure: true` → fires twice per event.
 
 Pattern B fallback (rare): no attribute + `autoconfigure: false` + explicit yaml tags. Only when class lives in autowire-excluded dir AND attribute can't be used. With `<AppNs>\:` `exclude:` containing `'../src/EventListener/'`, Pattern B requires both the def and the tags in yaml.
 
-**Choosing the source:** Doctrine `onFlush`/`postFlush` catches all paths (admin, API, order workflow restocks, bulk imports). Sylius Resource event (`<host>.post_update`) covers admin/API only. For cross-path field watching (stock, status), Doctrine is the simplest reliable signal - stock is a field on `ProductVariant`, no dedicated Sylius stock event surface exists.
+**Choosing the source:** Doctrine `onFlush`/`postFlush` catches all paths (admin, API, order-workflow side effects, bulk imports). Sylius Resource event (`<host>.post_update`) covers admin/API only. For cross-path field watching, Doctrine is the simplest reliable signal when the field lives on an existing resource with no dedicated domain event - stock on `ProductVariant` is the canonical case, worked end to end in `reference/worked-example.md`.
 
 **Verify:** `bin/console debug:event-dispatcher` (Sylius events) / `bin/console doctrine:event:list`.
 
@@ -300,20 +302,18 @@ Pattern B fallback (rare): no attribute + `autoconfigure: false` + explicit yaml
   {% extends '@SyliusCore/Email/layout.html.twig' %}
 
   {% block subject %}
-      {% set translation_locale = notification.localeCode %}
-      {{ 'app.email.back_in_stock.subject'|trans({}, 'messages', translation_locale) }}
+      {% set translation_locale = <resource>.localeCode %}
+      {{ 'app.email.<code>.subject'|trans({}, 'messages', translation_locale) }}
   {% endblock %}
 
   {% block content %}
-      {% set translation_locale = notification.localeCode %}
-      <p>{{ 'app.email.back_in_stock.body'|trans({'%product%': variant.product.name}, 'messages', translation_locale) }}</p>
-      <p>
-          <a href="{{ url('sylius_shop_product_show', {slug: variant.product.translation(translation_locale).slug, _locale: translation_locale}) }}">
-              {{ 'app.email.back_in_stock.view_product'|trans({}, 'messages', translation_locale) }}
-          </a>
-      </p>
+      {% set translation_locale = <resource>.localeCode %}
+      <p>{{ 'app.email.<code>.body'|trans({}, 'messages', translation_locale) }}</p>
   {% endblock %}
   ```
+
+  A filled-in instance (with a product-name interpolation and a link back to
+  the product page) is in `reference/worked-example.md`.
 
   URL rule (R-URL-IN-EMAIL): always Twig `url()` with the full `localeCode`. Never hand-roll URL concatenation (`sylius_channel_url(asset(''), channel) ~ '/products/' ~ slug`) and never `localeCode|split('_')[0]` (strips region - Sylius URLs use full locale). Messenger async handlers have no Request context → `framework.router.default_uri` MUST be set (R-DEFAULT-URI). Verify via `bin/console debug:config framework.router`; if absent, add:
 
@@ -423,23 +423,23 @@ If MCP tool available, call it once. Otherwise skip and assume project setup. NE
 
 **Authoring rule:** Write a repeatable spec file at `tests/Playwright/<feature>.spec.ts` (or the project's configured Playwright spec location). Do NOT run the steps as one-shot exploratory tool calls. Then execute the spec via Playwright MCP. Spec must be committable, re-runnable, deterministic.
 
-**Coverage rule:** spec drives ALL observable user paths in the feature, not just the entry point. Single-step specs rejected.
+**Coverage rule:** spec drives ALL observable user paths in the feature, not just the entry point. Single-step specs rejected. `reference/worked-example.md` walks this exact protocol against a concrete feature.
 
 **Steps (encoded in the spec):**
 
-1. **Setup state.** Force precondition: `bin/console app:variant:restock <variant_code> 0` (or project's equivalent) or fixture preset. Spec self-prepares - do not assume DB state.
-2. `browser_navigate` → product show page for the variant.
+1. **Setup state.** Force the feature's precondition via a project CLI command or fixture preset - not a hand-rolled `UPDATE`. Spec self-prepares - do not assume DB state.
+2. `browser_navigate` → the page the feature's UI lives on.
 3. `browser_snapshot` → assert feature widget visible (form / button / badge - feature-specific).
 4. `browser_type` or `browser_fill_form` → fill required inputs (email, etc.).
 5. `browser_click` → submit.
 6. `browser_snapshot` → assert success flash / state change.
-7. Trigger downstream condition via ORM-aware path. Use `bin/console app:variant:restock <variant_code> 10`, admin UI flow via Playwright, or API call. NEVER raw SQL (`doctrine:query:sql "UPDATE ..."`) - R-PLAYWRIGHT-NO-RAW-SQL: bypasses UoW → Doctrine listener never fires → handler never runs → mailer assertion fails.
+7. Trigger the downstream condition via an ORM-aware path: a CLI command, admin UI flow via Playwright, or API call. NEVER raw SQL (`doctrine:query:sql "UPDATE ..."`) - R-PLAYWRIGHT-NO-RAW-SQL: bypasses UoW → Doctrine listener never fires → handler never runs → mailer assertion fails.
 8. Mate profiler MCP → `profiler_list_requests` filtered by URL / method / recency → pick latest matching token. Sync Messenger transport in dev ⇒ handler ran in same request ⇒ same token covers email dispatch.
 9. **Email proof (R-EMAIL-PROOF).** Assert via inspectable target - NOT a DB column written by the handler:
    - **Mailpit/mailhog capture transport** (preferred): scrape `http://localhost:8025/api/v1/messages` for matching subject + recipient + locale-correct body.
-   - **Profiler mailer collector**: `profiler_request_detail(token).mailer`. Works ONLY when restock was triggered via HTTP (admin form / API) - CLI restock bypasses profiler.
-   - If `MAILER_DSN` is `null://null` and neither inspectable target is available: print `// TODO: assert email via mailpit/profiler` and report acceptance INCOMPLETE. Do NOT pass on a `notified_at IS NOT NULL` check - handler reaches end-of-loop even when `null://null` swallows the message. False positive.
-10. **Post-state assertion.** `browser_navigate` → product page again. `browser_snapshot` → assert widget NO LONGER visible (variant now in stock). Catches stale cache + listener idempotency failures.
+   - **Profiler mailer collector**: `profiler_request_detail(token).mailer`. Works ONLY when the triggering mutation happened via HTTP (admin form / API) - a CLI-triggered mutation bypasses profiler.
+   - If `MAILER_DSN` is `null://null` and neither inspectable target is available: print `// TODO: assert email via mailpit/profiler` and report acceptance INCOMPLETE. Do NOT pass on a handler-written DB flag check - handler reaches end-of-loop even when `null://null` swallows the message. False positive.
+10. **Post-state assertion.** `browser_navigate` → the feature's page again. `browser_snapshot` → assert widget NO LONGER visible (precondition no longer holds). Catches stale cache + listener idempotency failures.
 11. Any step fails → fix root cause, re-run from step 1. Do not skip with "good enough".
 
 **Adapt:**

@@ -138,16 +138,16 @@ Details + ✅ replacements in `anti-patterns.md`. Refuse-list:
 - ❌ **Channel repo wrong import.** `Sylius\Component\Core\Repository\ChannelRepositoryInterface` **does not exist**. Always use `Sylius\Component\Channel\Repository\ChannelRepositoryInterface`. Wrong import = container compile error.
 - ❌ **R-TRANS-LOCALE.** Translation filename using locale shorthand when shop runs a locale variant. If `framework.default_locale` / `sylius_locale` = `en_US`, file MUST be `translations/messages.en_US.yaml`, not `messages.en.yaml`. (Pre-Playwright `cache:clear` - see R-CACHE-CLEAR-PRE-VERIFY - handles cache rewarm; no separate user reminder needed.)
 - ❌ **R-NO-CUSTOM-FACTORY (legacy code).** `classes.factory: App\Factory\<X>Factory` registered without `__construct(string $className)` signature. Sylius resource-bundle compiler pass injects entity FQCN string into the factory constructor slot; mismatched signature crashes at first `createNew()` (`TypeError: must be of type FactoryInterface, string given`). `debug:container` clean. Either drop the custom factory (use default Factory) or fix the constructor.
-- ❌ **R-ROUTE-PREFIX.** Outer `prefix:` in a `type: sylius.resource` import containing the kebab-cased resource alias plural. The resource loader auto-derives the path segment from the alias plural - including it manually duplicates: `/admin/back-in-stock-notifications/back-in-stock-notifications/`. Outer prefix carries ONLY the admin/shop path: `'/%sylius_admin.path_name%'`.
+- ❌ **R-ROUTE-PREFIX.** Outer `prefix:` in a `type: sylius.resource` import containing the kebab-cased resource alias plural. The resource loader auto-derives the path segment from the alias plural - including it manually duplicates it, e.g. `/admin/<alias-plural>/<alias-plural>/`. Outer prefix carries ONLY the admin/shop path: `'/%sylius_admin.path_name%'`.
 - ❌ **R-LISTENER-CODE-NOT-ID.** Doctrine listener collecting `$entity->getId()` for downstream Messenger dispatch when entity has a stable `code` / UUID. IDs change across env restores, fixture reloads, snapshots. Collect codes; handler does `findOneBy(['code' => $code])`. Exception: entities without natural codes (`Adjustment`, `OrderItemUnit`) - use id, document why.
-- ❌ **R-APP-EMAIL-PREFIX.** App-level mailer code without `app_` prefix. Sylius core ships `order_confirmation`, `password_reset_token`, `customer_registration`. Bare `back_in_stock` risks future collision. Always: `app_back_in_stock`.
+- ❌ **R-APP-EMAIL-PREFIX.** App-level mailer code without `app_` prefix. Sylius core ships `order_confirmation`, `password_reset_token`, `customer_registration`. A bare app-chosen code risks future collision with a core one. Always: `app_<code>`.
 - ❌ **R-MIGRATION-CLEANUP.** Committed migration with scaffold stubs: `/** * Auto-generated Migration: Please modify to your needs! */` class docblock, `// this up() migration is auto-generated, ...` / `// this down() migration is auto-generated, ...` comments, or empty `getDescription()`. After `doctrine:migrations:diff`, strip stubs and fill description with one-line change summary.
 - ❌ **R-TWIG-COMPONENT-PATH.** App-level Twig Components at `App\Twig\Components\` (Symfony UX default). Use `App\TwigComponent\<Section>\` to match Sylius bundle convention (`Sylius\Bundle\<X>Bundle\TwigComponent\`).
 - ❌ **R-EXCLUDE-EXPLICIT-DIRS.** Writing an explicit service def in a directory NOT on the `<AppNs>\:` glob `exclude` list. Autoregister silently clobbers the explicit def - `arguments` dropped, `tags` dropped. `debug:container` may still show the class (tag from autoconfigure) but wired wrong. Append the dir to `exclude:` in the same write. See `reference/services.md` for the standard exclude block.
 - ❌ **R-IMPORTS-SERVICES-DIR violation.** Explicit service defs inlined into `config/services.yaml`. Use `imports: { resource: 'services/' }` + per-feature file under `config/services/app_<feature>.yaml`. `services.yaml` stays stable; feature files isolated.
-- ❌ **R-PLAYWRIGHT-NO-RAW-SQL.** Playwright spec triggering changes to an entity observed by a Doctrine listener via raw SQL (`bin/console doctrine:query:sql "UPDATE ..."`). Raw SQL bypasses UnitOfWork → listener never fires → handler never runs → assertion against side-effect (`notified_at`, dispatched message, sent email) fails. Use CLI command that goes through ORM (`bin/console app:variant:restock <code> <qty>`), admin UI flow via Playwright, or API call.
-- ❌ **R-HOOK-VISIBILITY.** Selecting a `sylius_twig_hooks` leaf target without confirming the parent template renders it in the feature's target state. Leaf hooks under `*.add_to_cart`, `*.add_to_cart.variants.*` live inside `{% if %}` branches that short-circuit when variant unavailable. For out-of-stock-only features (back-in-stock widget), the `add_to_cart` sub-tree is dead. Use the parent hook (`sylius_shop.product.show.content.info.summary`) that fires unconditionally. Call MCP `sylius_hooks_resolve_for_visibility` with feature visibility state (`oos` / `in_stock` / `always`) to get valid targets - do not guess from hook name suffix.
-- ❌ **R-EMAIL-PROOF.** Playwright asserting `notified_at IS NOT NULL` (or any handler-written DB column) as proof of email delivery. Handler reaches end-of-loop even when `null://null` swallows the message - false positive. Acceptable proofs: (1) capture transport (mailpit/mailhog) - scrape `http://localhost:8025/api/v1/messages`, (2) profiler mailer collector - works ONLY when restock triggered via HTTP. CLI restock bypasses profiler. If neither available, spec prints `// TODO: assert email via mailpit/profiler` rather than passing on a `notified_at` check it can't trust.
+- ❌ **R-PLAYWRIGHT-NO-RAW-SQL.** Playwright spec triggering changes to an entity observed by a Doctrine listener via raw SQL (`bin/console doctrine:query:sql "UPDATE ..."`). Raw SQL bypasses UnitOfWork → listener never fires → handler never runs → assertion against the side-effect (a DB flag, dispatched message, sent email) fails. Use a CLI command that goes through ORM, an admin UI flow via Playwright, or an API call - see `reference/worked-example.md` for a concrete restock command.
+- ❌ **R-HOOK-VISIBILITY.** Selecting a `sylius_twig_hooks` leaf target without confirming the parent template renders it in the feature's target state. Leaf hooks under `*.add_to_cart`, `*.add_to_cart.variants.*` live inside `{% if %}` branches that short-circuit when variant unavailable. For a widget that only makes sense while its precondition doesn't hold (e.g. out-of-stock-only), the `add_to_cart` sub-tree is dead. Use the parent hook (`sylius_shop.product.show.content.info.summary`) that fires unconditionally. Call MCP `sylius_hooks_resolve_for_visibility` with feature visibility state (`oos` / `in_stock` / `always`) to get valid targets - do not guess from hook name suffix.
+- ❌ **R-EMAIL-PROOF.** Playwright asserting a handler-written DB flag (e.g. `notifiedAt IS NOT NULL`) as proof of email delivery. Handler reaches end-of-loop even when `null://null` swallows the message - false positive. Acceptable proofs: (1) capture transport (mailpit/mailhog) - scrape `http://localhost:8025/api/v1/messages`, (2) profiler mailer collector - works ONLY when the triggering mutation happened via HTTP. A CLI-triggered mutation bypasses profiler. If neither available, spec prints `// TODO: assert email via mailpit/profiler` rather than passing on a DB-flag check it can't trust.
 - ❌ **R-NOT-FOUND-EXCEPTION.** Throwing `\RuntimeException` (or any non-HTTP exception) from controller for resource-not-found. Renders HTTP 500 stack trace to shopper. Always `throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();` → HTTP 404 through Sylius error templates.
 - ❌ **R-MAILER-CONFIG-TRANSLATION-KEY.** `sylius_mailer.emails.<code>.subject:` as literal English. Always a translation key: `subject: app.email.<code>.subject`. Template `{% block subject %}` overrides at render time, but config-level key keeps the indirection consistent.
 - ❌ **R-FORM-PARENT-BUILDFORM.** Form type extending `AbstractResourceType` whose `buildForm()` does not call `parent::buildForm($builder, $options)` first. Future-proofs against Sylius adding parent behavior.
@@ -191,12 +191,12 @@ Details + ✅ replacements in `anti-patterns.md`. Refuse-list:
 
 ## Event Source Decision
 
-For features watching field changes (stock, status):
+For features watching a field change (a threshold crossing, a status flip):
 
-- **Doctrine `onFlush` + `postFlush`** (Pattern A, attribute-only) - catches all paths: admin grid mutations, API, order-cancel restocks, bulk imports. Preferred for cross-path coverage like stock.
-- **Sylius Resource event (`<host>.post_update`)** - admin/API only; order-workflow side effects bypass Resource controller. Idiomatic for admin-only-mutation features.
+- **Doctrine `onFlush` + `postFlush`** (Pattern A, attribute-only) - catches all paths: admin grid mutations, API, order-workflow side effects, bulk imports. Preferred for cross-path coverage.
+- **Sylius Resource event (`<host>.post_update`)** - admin/API only; order-workflow side effects bypass the Resource controller. Idiomatic for admin-only-mutation features.
 
-Stock is a field on `ProductVariant`, NOT a separate resource. No dedicated Sylius stock event surface exists. Doctrine listener is the simplest reliable signal for stock change detection.
+Many fields worth watching (stock, order state) live on an existing resource rather than being a resource of their own, and have no dedicated Sylius domain event. Doctrine listener is then the simplest reliable signal - `reference/worked-example.md` walks the stock case end to end.
 
 ## Core Repo Aliases (R-CORE-REPO-ALIASES)
 
@@ -223,25 +223,25 @@ Sylius-idiomatic style only - not personal preferences. Match the host project's
 
 ## Playwright Acceptance Protocol (mandatory step 11)
 
-End-of-workflow live run. Author a **repeatable spec file** at `tests/Playwright/<feature>.spec.ts` (or project's equivalent path) - not exploratory one-shot tool calls. AI runs the file via Playwright MCP and refuses "done" if it fails. Refuse "done" without green pass on every step.
+End-of-workflow live run. Author a **repeatable spec file** at `tests/Playwright/<feature>.spec.ts` (or project's equivalent path) - not exploratory one-shot tool calls. AI runs the file via Playwright MCP and refuses "done" if it fails. Refuse "done" without green pass on every step. `reference/worked-example.md` walks this exact protocol against a concrete feature.
 
-**Coverage rule:** spec must drive ALL observable user paths in the feature, not just the happy entry point. For back-in-stock that means: setup, subscribe, restock, email assertion, AND post-restock UI state (widget hidden once variant in stock). Single-step specs are rejected.
+**Coverage rule:** spec must drive ALL observable user paths in the feature, not just the happy entry point - setup, the user action, the downstream trigger, any email assertion, AND the post-change UI state (e.g. a widget disappearing once its precondition no longer holds). Single-step specs are rejected.
 
 **Pre-req:** if MCP tool `sylius_cache_clear` available, call it once before the spec. Otherwise rely on project setup. NEVER `bin/console cache:clear` via Bash.
 
 0. **Pre-verify cache clear.** If MCP `sylius_cache_clear` available, call once. Else rely on project setup. NEVER `bin/console cache:clear` via Bash.
 1. Ensure dev server up. Project context provides URL (default `http://localhost:8000`). If down, ask user to start it - do not silently skip.
-2. **Setup state.** Force the precondition variant out of stock: `bin/console app:variant:restock <variant_code> 0` (or `sylius:inventory:adjust` if app's command differs) or fixture preset.
-3. `browser_navigate` → product show page for the variant. `browser_snapshot` → assert feature widget visible (form, button, badge).
+2. **Setup state.** Force the feature's precondition (e.g. a resource into its "before" state) via a project CLI command or fixture preset - never a hand-rolled `UPDATE`.
+3. `browser_navigate` → the page the feature's UI lives on. `browser_snapshot` → assert feature widget visible (form, button, badge).
 4. `browser_type` / `browser_fill_form` → fill required inputs (e.g. email).
 5. `browser_click` → submit. `browser_snapshot` → assert success flash / state change.
-6. Trigger downstream condition through ORM: `bin/console app:variant:restock <variant_code> <qty>`. NEVER raw SQL (`doctrine:query:sql "UPDATE ..."`) - R-PLAYWRIGHT-NO-RAW-SQL: bypasses UoW → Doctrine listener never fires → handler never runs → assertion fails.
+6. Trigger the downstream condition through ORM (CLI command, admin UI flow, or API call). NEVER raw SQL (`doctrine:query:sql "UPDATE ..."`) - R-PLAYWRIGHT-NO-RAW-SQL: bypasses UoW → Doctrine listener never fires → handler never runs → assertion fails.
 7. Mate profiler MCP → `profiler_list_requests` filtered by URL / method / recency → pick latest matching token. Sync Messenger transport in dev ⇒ handler ran in same request ⇒ same token covers email dispatch.
 8. **Email proof (R-EMAIL-PROOF).** Assert email via inspectable target - NOT a DB column:
    - Capture transport (mailpit/mailhog) - scrape `http://localhost:8025/api/v1/messages` for matching subject + recipient + locale-correct body.
-   - OR profiler mailer collector - works ONLY if restock triggered via HTTP request (admin form / API). CLI restock bypasses profiler.
-   - If neither available: print `// TODO: assert email via mailpit/profiler` and report acceptance INCOMPLETE - do not pass on a `notified_at`-style DB check.
-9. **Post-state assertion.** `browser_navigate` → product page again. `browser_snapshot` → assert widget NO LONGER visible (variant now in stock). Catches stale-cache bugs and listener idempotency failures.
+   - OR profiler mailer collector - works ONLY if the triggering mutation happened via HTTP request (admin form / API). A CLI-triggered mutation bypasses profiler.
+   - If neither available: print `// TODO: assert email via mailpit/profiler` and report acceptance INCOMPLETE - do not pass on a handler-written DB flag as proof.
+9. **Post-state assertion.** `browser_navigate` back to the feature's page. `browser_snapshot` → assert the widget NO LONGER visible (precondition no longer holds). Catches stale-cache bugs and listener idempotency failures.
 10. Any step fails → fix root cause, re-run from step 0. Do not declare done until full sequence green.
 
 If feature has no email leg: stop at step 5. If feature has no async leg: skip steps 6–8. Surface assertions (steps 2–5, 9) always mandatory.
@@ -251,3 +251,4 @@ If feature has no email leg: stop at step 5. If feature has no async leg: skip s
 - `workflow.md` - 13-step build checklist with MCP calls + verify commands.
 - `anti-patterns.md` - ❌/✅ pairs per hard rule with "Why" line.
 - `reference/resource.md`, `reference/twig-hooks.md`, `reference/mailer.md`, `reference/events.md`, `reference/services.md` - deep dives, fetch on demand.
+- `reference/worked-example.md` - one feature (back-in-stock notifications) built end to end, concretely, tagged against the rule IDs above. Every other file in this skill is written generically; this is the file that proves it out on a real case.
