@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Sylius\MateExtension\Hook\HookablesReader;
 use Sylius\MateExtension\Kernel\HostKernelProvider;
+use Sylius\MateExtension\Kernel\HttpPackagistClient;
 use Sylius\MateExtension\Tool\Admin\RestockViaHttp;
 use Sylius\MateExtension\Tool\Cache\CacheClear;
 use Sylius\MateExtension\Tool\Email\EmailTemplateSkeleton;
@@ -17,8 +18,10 @@ use Sylius\MateExtension\Tool\Mailer\CaptureStatus as MailerCaptureStatus;
 use Sylius\MateExtension\Tool\Mailer\VerifyTemplate as VerifyMailerTemplate;
 use Sylius\MateExtension\Tool\Playwright\PlaywrightRecipe;
 use Sylius\MateExtension\Tool\Project\InstalledPlugins;
+use Sylius\MateExtension\Tool\Project\PluginCompatibility;
 use Sylius\MateExtension\Tool\Project\ProjectAudit;
 use Sylius\MateExtension\Tool\Project\ProjectProfile;
+use Sylius\MateExtension\Tool\Project\ServiceDecorators;
 use Sylius\MateExtension\Tool\Resource\InspectResource;
 use Sylius\MateExtension\Tool\Resource\ListResources;
 use Sylius\MateExtension\Tool\Resource\ResourceTemplate;
@@ -39,6 +42,7 @@ return static function (ContainerConfigurator $configurator): void {
     $services = $configurator->services();
 
     $services->set(HostKernelProvider::class)->public();
+    $services->set(HttpPackagistClient::class);
     $services->set(HookablesReader::class)
         ->args([service(HostKernelProvider::class)])
         ->public()
@@ -68,6 +72,8 @@ return static function (ContainerConfigurator $configurator): void {
         ServicesYamlPatchExclude::class => [service(HostKernelProvider::class)],
         ProjectProfile::class => [service(HostKernelProvider::class)],
         InstalledPlugins::class => [service(HostKernelProvider::class)],
+        ServiceDecorators::class => [service(HostKernelProvider::class)],
+        PluginCompatibility::class => [service(HostKernelProvider::class), service(HttpPackagistClient::class)],
         ProjectAudit::class => [service(HostKernelProvider::class)],
         EmailTemplateSkeleton::class => [\dirname(__DIR__) . '/src/Scaffold'],
         TranslationCreate::class => [service(HostKernelProvider::class)],

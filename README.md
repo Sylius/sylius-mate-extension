@@ -55,7 +55,7 @@ Tools are grouped by domain. Full reference in [INSTRUCTIONS.md](INSTRUCTIONS.md
 - **Route** — `sylius_routes_show`, `sylius_route_inspect`
 - **Mailer / Email** — `sylius_email_capture_status`, `sylius_mailer_verify_template`, `sylius_email_template_skeleton`
 - **Service configuration** — `sylius_services_yaml_profile`, `sylius_services_yaml_audit`, `sylius_services_yaml_patch_exclude`
-- **Project** — `sylius_project_profile`, `sylius_installed_plugins`, `sylius_project_audit`
+- **Project** — `sylius_project_profile`, `sylius_installed_plugins`, `sylius_service_decorators`, `sylius_plugin_compatibility`, `sylius_project_audit`
 - **Translation** — `sylius_translation_create`
 - **Admin / Playwright** — `sylius_admin_restock_via_http`, `sylius_playwright_recipe`
 - **Cache** — `sylius_cache_clear`

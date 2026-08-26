@@ -6,6 +6,7 @@
     "keywords": ["sylius", "mcp", "devtools", "ai", "dev"],
     "require": {
         "php": ">=8.2",
+        "composer/semver": "^3.4",
         "symfony/ai-mate": "^0.12",
         "mcp/sdk": "^0.7"
     },

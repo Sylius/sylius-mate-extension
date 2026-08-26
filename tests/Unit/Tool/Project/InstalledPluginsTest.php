@@ -25,11 +25,17 @@ final class InstalledPluginsTest extends TestCase
         $this->deleteTree($this->sandbox);
     }
 
-    public function testDetectsKnownMsiPlugin(): void
+    public function testDetectsEnabledBundleNotOwnedByAnyVendorPackage(): void
     {
+        // The bundle class lives under this repo's own src/ (autoloaded via
+        // PSR-4, not vendor/), so with kernel.project_dir pointed at the
+        // sandbox, reflection resolves a real file whose path can never sit
+        // under "<sandbox>/vendor/" — package_name/version must come back
+        // null. Proves the "host's own code, not a vendor package" branch
+        // without touching any real project files.
         file_put_contents(
             $this->sandbox . '/config/bundles.php',
-            "<?php\nreturn [\n    Sylius\\MultiSourceInventoryPlugin\\SyliusMultiSourceInventoryPlugin::class => ['all' => true],\n];\n",
+            sprintf("<?php\nreturn [\n    \\%s::class => ['all' => true],\n];\n", InstalledPlugins::class),
         );
 
         $tool = new InstalledPlugins($this->host());
@@ -37,8 +43,9 @@ final class InstalledPluginsTest extends TestCase
         $result = ($tool)();
 
         self::assertCount(1, $result['items']);
-        self::assertSame('sylius/multi-source-inventory-plugin', $result['items'][0]['name']);
-        self::assertNotEmpty($result['items'][0]['decorates']);
+        self::assertSame(InstalledPlugins::class, $result['items'][0]['bundle_class']);
+        self::assertNull($result['items'][0]['package_name']);
+        self::assertNull($result['items'][0]['package_version']);
     }
 
     public function testEmptyWhenBundlesPhpMissing(): void
@@ -48,6 +55,28 @@ final class InstalledPluginsTest extends TestCase
         $result = ($tool)();
 
         self::assertSame([], $result['items']);
+        self::assertNull($result['sylius_version']);
+    }
+
+    public function testExposesSyliusVersionAndPackagesFromComposerLock(): void
+    {
+        file_put_contents($this->sandbox . '/composer.lock', json_encode([
+            'packages' => [
+                ['name' => 'sylius/sylius', 'version' => '2.2.6', 'type' => 'library'],
+                ['name' => 'sylius/refund-plugin', 'version' => '1.5.0', 'type' => 'sylius-plugin'],
+                ['name' => 'symfony/console', 'version' => 'v7.1.0', 'type' => 'library'],
+            ],
+        ], \JSON_THROW_ON_ERROR));
+
+        $tool = new InstalledPlugins($this->host());
+
+        $result = ($tool)();
+
+        self::assertSame('2.2.6', $result['sylius_version']);
+        self::assertCount(2, $result['sylius_packages']);
+        $names = array_column($result['sylius_packages'], 'name');
+        self::assertContains('sylius/sylius', $names);
+        self::assertContains('sylius/refund-plugin', $names);
     }
 
     private function host(): FakeHostContainerProvider

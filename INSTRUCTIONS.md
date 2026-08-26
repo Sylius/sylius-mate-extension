@@ -31,7 +31,9 @@ Read-only MCP tools exposing the Sylius runtime domain. Call before generating a
 | `sylius_translation_create` | **Mutating.** Merge a key tree into `translations/<domain>.<locale>.yaml`. Pass `locales: [...]` for multi-locale projects (one file per locale). Auto-detects locale from `kernel.default_locale`. Returns `cache_clear_required: true` |
 | `sylius_playwright_recipe` | Emit a `tests/Playwright/<slug>.spec.ts` script for a flow. Steps grouped into setup / scenario / teardown |
 | `sylius_project_profile` | **Call once per session.** Auto-detect host app namespace (e.g. `Elesto`), src/config/translations dirs, enabled locales, default locale + channel, MAILER_DSN observability, services.yaml exclude entries, hook config dir convention. Feeds every other scaffold tool — stops hardcoding `App\` |
-| `sylius_installed_plugins` | List active Sylius plugins (bundles.php + composer.lock) with decorator map + key entities. **Call before designing any inventory/order/price/availability listener** — drives target-entity choice (e.g. with MSI installed, listen on `InventorySourceStockInterface` not `ProductVariant`) |
+| `sylius_installed_plugins` | Dynamic detection, no hardcoded plugin registry: `sylius_version`, every `sylius/*` package (composer.lock), every enabled bundle resolved to its owning composer package (`items[]`). Pure inventory — for decoration info use `sylius_service_decorators` |
+| `sylius_service_decorators` | Every service that decorates a `sylius.*`/`sylius_*` id: `original_service_id`, `decorator_class`, `decorator_package` (nullable — decoration is orthogonal to plugins; a decorator can be the host project's own customization), `priority`. Facts only — **you** interpret what a decorator implies (e.g. MSI's checker means stock lives on `InventorySourceStockInterface`, not `ProductVariant`); read `decorator_class` via `sylius_resource_inspect`/file read if unsure. **Call before designing any inventory/order/price/availability listener whose target might already be overridden** |
+| `sylius_plugin_compatibility` | For every `sylius-plugin`-type package in `composer.lock`, checks whether its INSTALLED version supports `target_sylius_version` (reads that plugin's own `vendor/<pkg>/composer.json` constraint, offline) and, if not, looks up Packagist for the newest stable version that does. **Call before bumping `sylius/sylius`** — pair with `sylius_installed_plugins.sylius_version` for "what am I on, what needs to move first" |
 | `sylius_project_audit` | One-shot audit of Sylius-Standard baseline conventions: services.yaml excludes, core repo aliases, sync messenger in dev, `framework.router.default_uri`, mailer observable, twig_hooks dir, project `CLAUDE.md`. Returns `patches_available[]` |
 
 ## Hard rules
@@ -49,5 +51,5 @@ Run once when starting a new feature, before any code edit:
 
 1. `sylius_services_yaml_profile` — learn DI defaults
 2. `sylius_project_profile` — namespace / locales / DSN
-3. `sylius_installed_plugins` — decorator + entity awareness
+3. `sylius_installed_plugins` + `sylius_service_decorators` — plugin inventory + decorator awareness
 4. `sylius_domain_list_resources` + `sylius_hooks_list` — sanity scan
