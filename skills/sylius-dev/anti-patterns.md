@@ -1466,7 +1466,7 @@ framework:
 
 ✅ Right: `App\Repository\BackInStockNotificationRepository`.
 
-Pinned after 10 iters of oscillation:
+Pinned convention:
 
 | Dir | Sub-NS? |
 |---|---|
