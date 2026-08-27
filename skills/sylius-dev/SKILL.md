@@ -17,15 +17,15 @@ You are building a feature in a Sylius 2.x project. Follow this brief. Never ski
 
 ## MCP-First Protocol (non-negotiable)
 
-Before writing ANY file, you MUST call:
+Before writing ANY file, you MUST complete this discovery checklist (MCP calls where one exists):
 
 - `sylius_project_profile` - **first call, always.** Returns `app_namespace` (PSR-4 root, never hardcode `App\`), `locales` (enabled list for translation file emission), and feature flags. R-NAMESPACE-FROM-COMPOSER + R-MULTI-LOCALE depend on this.
 - `sylius_installed_plugins` - inventory installed Sylius plugins (MSI, wishlist, refund, multi-currency, b2b) before designing any listener / inventory checker / price service / channel resolver. R-PLUGIN-AWARENESS.
 - `sylius_domain_list_resources` - does target resource exist? Learn shape.
 - `sylius_hooks_find_for_template` - for UI placement.
-- `sylius_domain_list_events` - find domain event before reaching for Doctrine listener.
+- **Domain event check.** Grep `vendor/sylius/*/src/**/SyliusEvents.php` for an existing event before reaching for a Doctrine listener. No MCP tool for this - these are compile-time constants, not kernel state, so a tool would just wrap the same grep.
 - `sylius_twig_list_functions` - verify any `sylius_*` Twig function before use.
-- `sylius_domain_list_email_types` - confirm mailer code shape.
+- **Mailer code check.** Read `sylius_mailer.emails.*` keys from `config/packages/_sylius_mailer.yaml` to confirm existing mailer code shape. No dedicated MCP list tool; `sylius_mailer_verify_template` confirms the final code+template pair in the verify pass.
 - `sylius_domain_list_grids` - mirror existing grid for admin CRUD.
 
 Before declaring DONE, you MUST execute this verify script. Every command output empty/passing. Any failure → STOP, fix, re-run. Do not report task complete with non-empty error output.
@@ -61,7 +61,7 @@ bin/console debug:router | grep <route_name>
 bin/console messenger:debug | grep <MessageClass>
 
 # 8. MCP verify (mandatory):
-#    sylius_resource_verify <alias>           - every new resource
+#    sylius_resource_inspect <alias>          - every new resource
 #    sylius_routes_show <route_name>          - every new route
 #    sylius_mailer_verify_template <code>     - every new email code
 #    sylius_hooks_find_for_template <path>    - confirm hook still resolves
@@ -75,7 +75,6 @@ If the [Sylius Mate Extension](https://github.com/Sylius/sylius-mate-extension) 
    - `sylius_installed_plugins` → grep `composer.json` `require` for `sylius/*-plugin` entries.
    - `sylius_domain_list_resources` → grep `config/packages/_sylius.yaml` for `sylius_resource.resources.*` keys.
    - `sylius_hooks_find_for_template` → grep `vendor/sylius/sylius/src/Sylius/Bundle/{Shop,Admin}Bundle/Resources/views/` for `{% hook %}` tags.
-   - `sylius_domain_list_events` → grep `vendor/sylius/sylius/src/Sylius/Component/*/SyliusEvents.php` constants.
    - `sylius_twig_list_functions` → grep `vendor/sylius/*/src/**/Twig/*Extension.php` for `new TwigFunction(...)`.
    - `sylius_domain_list_grids` → grep `config/packages/_sylius_grid.yaml` + `vendor/sylius/*/Resources/config/grids/`.
 3. Mark every fact derived this way with `⚠ unverified` so the user knows to double-check.
@@ -84,7 +83,7 @@ If the [Sylius Mate Extension](https://github.com/Sylius/sylius-mate-extension) 
 
 Full checklist in `workflow.md`. Summary:
 
-1. Discover (list_resources, find_for_template, list_events).
+1. Discover (list_resources, find_for_template, grep domain events).
 2. **Resource Bundle (all-or-nothing).** Single phase, mandatory artifacts ship together:
    - entity + interface, repo + interface
    - **No custom factory** by default. Sylius default `Sylius\Resource\Factory\Factory` wires automatically when `classes.factory:` is omitted. When a controller / handler needs the factory instance, inject by service id via Autowire attribute, not via a custom interface: `#[Autowire(service: 'app.factory.<alias>')] private FactoryInterface $factory`. Add a custom factory CLASS only when feature needs pre-construction behavior (set defaults, attach related entity). If you do add one, constructor MUST be `__construct(string $className)` - Sylius compiler pass injects the entity FQCN string into that slot.
@@ -153,7 +152,7 @@ Details + ✅ replacements in `anti-patterns.md`. Refuse-list:
 - ❌ **R-MAILER-CONFIG-TRANSLATION-KEY.** `sylius_mailer.emails.<code>.subject:` as literal English. Always a translation key: `subject: app.email.<code>.subject`. Template `{% block subject %}` overrides at render time, but config-level key keeps the indirection consistent.
 - ❌ **R-FORM-PARENT-BUILDFORM.** Form type extending `AbstractResourceType` whose `buildForm()` does not call `parent::buildForm($builder, $options)` first. Future-proofs against Sylius adding parent behavior.
 - ❌ **R-EM scope (tightened).** `EntityManagerInterface` injection in any feature service (controller, handler, listener, helper) when a Resource exists. Use `RepositoryInterface::add($x)` - Sylius `EntityRepository::add()` does persist+flush idempotently for both new and existing managed entities. Exception: bulk operations where DBAL/QueryBuilder beats per-row flush.
-- ❌ **Ad-hoc `bin/console cache:clear` via Bash.** Project rule (CLAUDE.md) forbids it. Skill no longer attempts a carve-out - iter-9 confirmed harness auto-mode classifier intercepts even MCP-tool Bash invocations. Cache:clear is owned by MCP `sylius_cache_clear` tool impl (must bypass Bash entirely) or project CLAUDE.md preset, not by this skill.
+- ❌ **Ad-hoc `bin/console cache:clear` via Bash.** Project rule (CLAUDE.md) forbids it. The harness's auto-mode classifier intercepts even MCP-tool Bash invocations of it, so there's no carve-out. Cache:clear is owned by MCP `sylius_cache_clear` tool impl (must bypass Bash entirely) or project CLAUDE.md preset, not by this skill.
 - ❌ **R-CONTROLLER-INVOKABLE.** `extends AbstractController` in a feature controller. Use `final` invokable services. Inject `FormFactoryInterface` (call `$this->formFactory->create(...)`, not `$this->createForm(...)`), `UrlGeneratorInterface` (`$this->urlGenerator->generate(...)`, not `$this->generateUrl(...)`). Flash via `$request->getSession()->getFlashBag()->add(...)`, not `$this->addFlash(...)`. `App\Controller\` glob w/ `controller.service_arguments` tag covers DI.
 - ❌ **R-DOCTRINE-LISTENER-ATTRIBUTE hybrid.** `#[AsDoctrineListener]` (or `#[Autoconfigure(tags:[...])]`) on class AND explicit `doctrine.event_listener` yaml tag together. With `autoconfigure: true`, both registrations apply → listener fires twice per event. Attribute-only is canonical. See `reference/events.md` for accepted patterns + rare yaml-only fallback.
 - ❌ **R-FORM-SVC dual pattern.** `app.form.type.<x>` id + FQCN alias dual declaration. Collapse to single FQCN-keyed service. See `reference/services.md`.
@@ -165,7 +164,7 @@ Details + ✅ replacements in `anti-patterns.md`. Refuse-list:
   {% set product = hookable_metadata.context.product ?? null %}
   ```
 
-- ❌ **R-HOOK-COMPONENT-TAG.** Using bare `#[AsTwigComponent]` as a hook `component:` target - Sylius hooks need the `sylius.twig_component` tag + custom compiler pass to bind props from hook config. For stateless widgets prefer `template:` hook + Twig Extension (iter-10 pattern). For Live behavior use `#[AsLiveComponent]` + Sylius tag.
+- ❌ **R-HOOK-COMPONENT-TAG.** Using bare `#[AsTwigComponent]` as a hook `component:` target - Sylius hooks need the `sylius.twig_component` tag + custom compiler pass to bind props from hook config. For stateless widgets prefer `template:` hook + Twig Extension. For Live behavior use `#[AsLiveComponent]` + Sylius tag.
 - ❌ **R-URL-IN-EMAIL.** Hand-rolled URL concatenation in email templates (`sylius_channel_url(asset(''), channel) ~ '/products/' ~ ...`) or `localeCode|split('_')[0]` (strips region; Sylius URLs use full locale). Always Twig `url()`:
 
   ```twig
@@ -173,7 +172,7 @@ Details + ✅ replacements in `anti-patterns.md`. Refuse-list:
   ```
 
   For Messenger async handlers (no Request context), `framework.router.default_uri` must be set in `messenger.yaml` so `url()` resolves absolute. Sylius-Standard should ship this.
-- ❌ **R-REPO-NAMESPACE violation.** Sub-namespacing classes that are pinned FLAT. After 10 iters of oscillation:
+- ❌ **R-REPO-NAMESPACE violation.** Sub-namespacing classes that are pinned FLAT:
   - Sub-namespace OK: `App\Entity\<Feature>\<X>`, `App\Form\Type\<Feature>\<X>Type`.
   - FLAT only: `App\Repository\<X>Repository`, `App\Factory\<X>Factory`, `App\EventListener\<X>Listener`, `App\Message\<X>`, `App\MessageHandler\<X>Handler`.
 - ❌ **R-FEATURE-DONE-INCLUDES-ADMIN.** Declaring a persisted-state feature "done" without admin grid + admin route. Verify `sylius_grid.grids.app_admin_<feature>` exists AND `debug:router | grep app_admin_<feature>_index` returns a hit before marking done.
@@ -207,7 +206,7 @@ Full yaml block + notes (incl. `Sylius\Component\Channel\Repository\ChannelRepos
 
 ## Cache Clear
 
-Not the skill's responsibility. CLAUDE.md forbids `bin/console cache:clear`; iter-9 confirmed the harness auto-mode classifier denies even MCP tools that shell out to it. Cache:clear is owned by:
+Not the skill's responsibility. CLAUDE.md forbids `bin/console cache:clear`; the harness auto-mode classifier denies even MCP tools that shell out to it. Cache:clear is owned by:
 
 - MCP `sylius_cache_clear` tool impl - must bypass Bash entirely (FS ops + cache warmup via Symfony Kernel API), OR
 - Project CLAUDE.md preset that grants the exception.

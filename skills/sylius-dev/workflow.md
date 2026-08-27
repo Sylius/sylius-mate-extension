@@ -6,15 +6,15 @@
 
 **Goal:** Map existing surface before generating anything.
 
-**MCP calls (in order):**
+**Discovery calls (in order, MCP where one exists):**
 
 - `sylius_project_profile` - **first**. Returns `app_namespace` (PSR-4 root from composer.json; never assume `<AppNs>\`), `locales` (enabled list - emit one translation file per), `default_uri_present` (R-DEFAULT-URI gate), feature flags.
 - `sylius_installed_plugins` - inventory active Sylius plugins. Critical: MSI changes stock storage to `InventorySourceStockInterface`; wishlist, refund, multi-currency-pricing, b2b decorate core services. Adjust listener target / query target accordingly (R-PLUGIN-AWARENESS).
 - `sylius_domain_list_resources` - does target resource already exist?
 - `sylius_hooks_find_for_template` - which TwigHook entry slot fits the UI change?
 - `sylius_hooks_resolve_for_visibility` - given feature visibility state (`oos` / `in_stock` / `always` / `logged_in_only`), returns hook targets whose parent template renders in that state. **Mandatory** before selecting a leaf hook (R-HOOK-VISIBILITY). Leaf hooks like `*.add_to_cart.*` live inside `{% if %}` branches that short-circuit when variant unavailable; for an out-of-stock-only feature they are dead.
-- `sylius_domain_list_events` - is there a Sylius event for the trigger?
-- `sylius_domain_list_email_types` - existing mailer codes.
+- **Domain event check.** Grep `vendor/sylius/*/src/**/SyliusEvents.php` for an existing event covering the trigger. No MCP tool for this - these are compile-time constants, not kernel state.
+- **Mailer code check.** Read `sylius_mailer.emails.*` keys from `config/packages/_sylius_mailer.yaml` for existing mailer codes. No dedicated MCP list tool; `sylius_mailer_verify_template` confirms the final code+template pair later (step 9.5).
 - `sylius_domain_list_grids` - closest existing grid to mirror.
 
 **Output:** Notes in scratch - chosen hook name, chosen event class, chosen mailer code, grid template to mirror.
@@ -27,8 +27,8 @@
 
 **MCP calls:**
 
-- `sylius_domain_resource_template` - entity/repo/factory/form scaffold shape.
-- `sylius_grid_template` - admin grid shape.
+- `sylius_domain_resource_template` - entity/repo/factory/form scaffold shape, including an admin grid yaml stub (no separate grid-template call needed).
+- `sylius_domain_list_grids` - mirror the closest existing grid's fields/filters/actions onto that stub.
 
 **Mandatory output:**
 
@@ -63,7 +63,7 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
 - `bin/console debug:container app.factory.<alias>`
 - `bin/console debug:router | grep admin_<alias>`
 - `bin/console lint:yaml config/`
-- `sylius_resource_verify <alias>`
+- `sylius_resource_inspect <alias>`
 
 ## 3. Migration
 
@@ -392,18 +392,23 @@ curl -sX DELETE http://localhost:8025/api/v1/messages
 vendor/bin/behat features/<area>/<name>.feature --dry-run
 
 # 11. MCP verify (mandatory)
-#   sylius_resource_verify <alias>
+#   sylius_resource_inspect <alias>
 #   sylius_routes_show <route_name>
 #   sylius_mailer_verify_template <code>
 #   sylius_hooks_find_for_template <template_path>
-#   sylius_feature_done_check <alias>      - pass/fail gate
+
+# 12. Feature-done gate (R-FEATURE-DONE-INCLUDES-ADMIN) - no single pass/fail
+#     tool; composed from checks already run above:
+#   - step 7's `debug:router | grep app_admin_<feature>_index` returned a hit
+#   - `sylius_grid.grids.app_admin_<feature>` exists in config/packages/_sylius_grid.yaml
+#   - step 11's `sylius_resource_inspect <alias>` passed
 ```
 
 Do **not** run `bin/console fos:elastica:populate` automatically (CLAUDE.md). Tell user.
 
 ## 10.5. Pre-Playwright Cache Clear
 
-Not the skill's responsibility. Iter-9 confirmed the harness auto-mode classifier denies even MCP-tool Bash invocations of `cache:clear`. Cache:clear is owned by:
+Not the skill's responsibility. The harness auto-mode classifier denies even MCP-tool Bash invocations of `cache:clear`. Cache:clear is owned by:
 
 - MCP `sylius_cache_clear` tool impl (must bypass Bash - use Symfony Kernel FS ops), OR
 - Project CLAUDE.md preset.

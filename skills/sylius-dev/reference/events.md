@@ -4,7 +4,7 @@ Decision tree for "react to domain change".
 
 ## Order of preference
 
-1. **Sylius domain event.** Tagged on the application's domain operation (e.g. `sylius.order.post_complete`, `sylius.product.post_update`). Call `sylius_domain_list_events` to find existing ones.
+1. **Sylius domain event.** Tagged on the application's domain operation (e.g. `sylius.order.post_complete`, `sylius.product.post_update`). Grep `vendor/sylius/*/src/**/SyliusEvents.php` for existing ones - no MCP tool for this, they're compile-time constants, not kernel state.
 2. **Sylius lifecycle event from `Resource` operations.** Fires before/after factory create, repo add/update/remove.
 3. **Doctrine `onFlush` + UnitOfWork.** Catches all persistence paths (direct updates, internal mutations). Use when no Sylius event covers the trigger - typical for inventory/stock changes.
 4. **Doctrine `postUpdate` / `postPersist`.** Acceptable for simple field-watch with low side effect risk.
