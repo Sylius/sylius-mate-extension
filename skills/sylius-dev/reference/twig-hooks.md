@@ -18,8 +18,8 @@ Call `sylius_hooks_find_for_template` with the template path. Returns list of ho
 sylius_twig_hooks:
     hooks:
         sylius_shop.product.show.content.info:
-            back_in_stock_button:
-                template: 'shop/product/back_in_stock_button.html.twig'
+            app_<feature>_widget:
+                template: 'shop/product/<feature>_widget.html.twig'
                 priority: 100
                 enabled: true
 ```
@@ -42,9 +42,9 @@ If a Twig component:
 sylius_twig_hooks:
     hooks:
         sylius_shop.product.show.content.info:
-            back_in_stock_button:
-                component: 'App\TwigComponent\Shop\BackInStockButtonComponent'
-                template: 'shop/product/back_in_stock_button.html.twig'
+            app_<feature>_widget:
+                component: 'App\TwigComponent\Shop\<X>Component'
+                template: 'shop/product/<feature>_widget.html.twig'
 ```
 
 Pass `template:` even with `component:` - don't rely on Symfony UX auto-template path (R-COMP-TPL). Sylius hooks need the explicit path.
