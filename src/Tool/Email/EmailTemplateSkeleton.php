@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Email;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 
-#[McpTool(
-    name: 'sylius_email_template_skeleton',
-    description: 'Emit a working twig template extending @SyliusCore/Email/layout.html.twig plus the matching sylius_mailer yaml entry for a new email code. Args: code (snake_case), context_vars (list of variable names referenced in the body).',
-)]
 final class EmailTemplateSkeleton
 {
     public function __construct(
@@ -23,6 +19,10 @@ final class EmailTemplateSkeleton
      *
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_email_template_skeleton',
+        description: 'Emit a working twig template extending @SyliusCore/Email/layout.html.twig plus the matching sylius_mailer yaml entry for a new email code. Args: code (snake_case), context_vars (list of variable names referenced in the body).',
+    )]
     public function __invoke(string $code, array $context_vars = []): array
     {
         if (!preg_match('/^[a-z][a-z0-9_]*$/', $code)) {

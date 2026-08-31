@@ -62,7 +62,7 @@ final class Envelope
 
     /**
      * Catch any exception inside the closure and return a structured error
-     * envelope instead of letting the MCP layer surface a generic -32603.
+     * envelope instead of letting the CLI surface a raw exception trace.
      *
      * @param callable(): array<string, mixed> $invocation
      *

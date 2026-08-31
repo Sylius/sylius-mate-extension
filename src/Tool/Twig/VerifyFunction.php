@@ -4,19 +4,15 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Twig;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\CallableDescriber;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 use Twig\Environment;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
 use Twig\TwigTest;
 
-#[McpTool(
-    name: 'sylius_twig_function_verify',
-    description: 'Strict verification of a Twig callable by exact name. Returns kind (function/filter/test), origin class, and reflected signature (parameter list). Optional kind arg narrows the search.',
-)]
 final class VerifyFunction
 {
     private const SERVICE_ID = 'twig';
@@ -29,6 +25,10 @@ final class VerifyFunction
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_twig_function_verify',
+        description: 'Strict verification of a Twig callable by exact name. Returns kind (function/filter/test), origin class, and reflected signature (parameter list). Optional kind arg narrows the search.',
+    )]
     public function __invoke(string $name, ?string $kind = null): array
     {
         if ('' === trim($name)) {

@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Project;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\ComposerPackageResolver;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 
-#[McpTool(
-    name: 'sylius_installed_plugins',
-    description: 'Dynamically detect what is installed on the host project: sylius/sylius core version, every sylius/* package in composer.lock, and every bundle enabled in config/bundles.php resolved to its owning composer package. No hardcoded plugin registry — works for any plugin, including private/company ones. Pure inventory: for what decorates a sylius.*/sylius_* core service (may or may not be plugin-owned), call sylius_service_decorators instead.',
-)]
 final class InstalledPlugins
 {
     public function __construct(
@@ -24,6 +20,10 @@ final class InstalledPlugins
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_installed_plugins',
+        description: 'Dynamically detect what is installed on the host project: sylius/sylius core version, every sylius/* package in composer.lock, and every bundle enabled in config/bundles.php resolved to its owning composer package. No hardcoded plugin registry — works for any plugin, including private/company ones. Pure inventory: for what decorates a sylius.*/sylius_* core service (may or may not be plugin-owned), call sylius_service_decorators instead.',
+    )]
     public function __invoke(): array
     {
         return Envelope::guard(fn (): array => $this->detect());

@@ -4,15 +4,11 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Admin;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 use Symfony\Component\Routing\RouterInterface;
 
-#[McpTool(
-    name: 'sylius_admin_restock_via_http',
-    description: 'Compose a Playwright-friendly recipe for restocking a product variant via the admin UI (so the change goes through ORM + listeners and yields an X-Debug-Token for profiler-based mailer assertion). Returns the admin route, HTTP method, form field hints, and the next step (call profiler MCP with the resulting token). Does NOT execute the request — Playwright does.',
-)]
 final class RestockViaHttp
 {
     public function __construct(
@@ -23,6 +19,10 @@ final class RestockViaHttp
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_admin_restock_via_http',
+        description: 'Compose a Playwright-friendly recipe for restocking a product variant via the admin UI (so the change goes through ORM + listeners and yields an X-Debug-Token for profiler-based mailer assertion). Returns the admin route, HTTP method, form field hints, and the next step (read the profiler via the Mate Symfony profiler tools with the resulting token). Does NOT execute the request — Playwright does.',
+    )]
     public function __invoke(string $variant_code, int $on_hand): array
     {
         if ('' === trim($variant_code)) {
@@ -68,7 +68,7 @@ final class RestockViaHttp
                 ],
                 'requires_authentication' => true,
                 'playwright_snippet' => $playwrightSnippet,
-                'next_step' => 'After Playwright runs the PATCH, capture response header "x-debug-token" and call the Symfony profiler MCP to read the mailer collector.',
+                'next_step' => 'After Playwright runs the PATCH, capture response header "x-debug-token" and call the Mate Symfony profiler tools to read the mailer collector.',
             ]],
             null,
             sprintf('Use route "%s" with PATCH (PUT also supported by Sylius admin form handlers).', $route['name']),

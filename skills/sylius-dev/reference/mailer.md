@@ -39,7 +39,7 @@ Rules:
 - Both `{% block subject %}` and `{% block content %}` defined - mailer renders them in separate passes.
 - Helper `{% set %}` inside each block, not at top level. `subject` block is rendered standalone, top-level `set` does not propagate.
 
-Translation files: `translations/messages.<exact_locale>.yaml`. Match the shop locale string exactly (`en_US`, not `en`). Translator only picks up new catalogs on cache rebuild - cache handling is owned by MCP `sylius_cache_clear` or project setup, never by this skill (see SKILL.md "Cache Clear").
+Translation files: `translations/messages.<exact_locale>.yaml`. Match the shop locale string exactly (`en_US`, not `en`). Translator only picks up new catalogs on cache rebuild - cache handling is owned by the Mate tool `sylius_cache_clear` or project setup, never by this skill (see SKILL.md "Cache Clear").
 
 ## Sending
 
@@ -106,6 +106,6 @@ Route message to `async` transport.
 
 ## Verify
 
-- `sylius_mailer_verify_template <code>` - confirms email registered + template resolves.
+- `sylius_mailer_verify_template --code=<code>` - confirms email registered + template resolves.
 - `bin/console lint:twig templates/email/`.
 - `bin/console messenger:debug` - handler registered.

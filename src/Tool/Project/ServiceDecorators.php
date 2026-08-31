@@ -4,21 +4,17 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Project;
 
-use Mcp\Capability\Attribute\McpTool;
 use Psr\Container\ContainerInterface;
 use Sylius\MateExtension\Kernel\ComposerPackageResolver;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 
-#[McpTool(
-    name: 'sylius_service_decorators',
-    description: 'List every service in the host container that decorates a sylius.*/sylius_* id — {original_service_id, decorator_class, decorator_package, priority}. decorator_package may be null: decoration is orthogonal to plugins, a decorator can just as well be the host project\'s own customization with no plugin involved. Facts only: this does not say what a decorator implies, read decorator_class (Read/sylius_resource_inspect) to reason about that. Call before designing any listener/checker/service whose behavior might already be overridden.',
-)]
 final class ServiceDecorators
 {
     public function __construct(
@@ -29,6 +25,10 @@ final class ServiceDecorators
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_service_decorators',
+        description: 'List every service in the host container that decorates a sylius.*/sylius_* id — {original_service_id, decorator_class, decorator_package, priority}. decorator_package may be null: decoration is orthogonal to plugins, a decorator can just as well be the host project\'s own customization with no plugin involved. Facts only: this does not say what a decorator implies, read decorator_class (Read/sylius_resource_inspect) to reason about that. Call before designing any listener/checker/service whose behavior might already be overridden.',
+    )]
     public function __invoke(): array
     {
         return Envelope::guard(fn (): array => $this->detect());

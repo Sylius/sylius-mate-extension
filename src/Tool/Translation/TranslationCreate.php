@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Translation;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 use Symfony\Component\Yaml\Yaml;
 
-#[McpTool(
-    name: 'sylius_translation_create',
-    description: 'Write or merge a translation key tree into translations/<domain>.<locale>.yaml for the host project. Accepts locales[] (multi-locale) — one file per locale. Defaults to kernel.default_locale or the project profile enabled_locales. Returns merged content per locale + cache_clear_required flag.',
-)]
 final class TranslationCreate
 {
     public function __construct(
@@ -27,6 +23,10 @@ final class TranslationCreate
      *
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_translation_create',
+        description: 'Write or merge a translation key tree into translations/<domain>.<locale>.yaml for the host project. Accepts locales[] (multi-locale) — one file per locale. Defaults to kernel.default_locale or the project profile enabled_locales. Returns merged content per locale + cache_clear_required flag.',
+    )]
     public function __invoke(
         array $keys,
         ?string $locale = null,

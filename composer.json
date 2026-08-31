@@ -1,14 +1,13 @@
 {
     "name": "sylius/sylius-mate-extension",
-    "description": "Dev-only Symfony AI Mate extension for Sylius: exposes the runtime domain (resources, hooks, grids, routes, services) to AI clients via MCP.",
+    "description": "Dev-only Symfony AI Mate extension for Sylius: exposes the runtime domain (resources, hooks, grids, routes, services) to AI coding agents via the Mate CLI.",
     "license": "MIT",
     "type": "symfony-ai-mate",
-    "keywords": ["sylius", "mcp", "devtools", "ai", "dev"],
+    "keywords": ["sylius", "mate", "devtools", "ai", "dev"],
     "require": {
         "php": ">=8.2",
         "composer/semver": "^3.4",
-        "symfony/ai-mate": "^0.12",
-        "mcp/sdk": "^0.7"
+        "symfony/ai-mate": "^0.13"
     },
     "require-dev": {
         "helgesverre/toon": "^3.1",

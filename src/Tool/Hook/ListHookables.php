@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Hook;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Hook\HookablesReader;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 
-#[McpTool(
-    name: 'sylius_hooks_list_hookables',
-    description: 'List hookables attached to a given hook: name, template/component, priority, configuration.',
-)]
 final class ListHookables
 {
     public function __construct(
@@ -22,6 +18,10 @@ final class ListHookables
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_hooks_list_hookables',
+        description: 'List hookables attached to a given hook: name, template/component, priority, configuration.',
+    )]
     public function __invoke(string $hook_name): array
     {
         if ('' === trim($hook_name)) {

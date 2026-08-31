@@ -4,15 +4,11 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Service;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 
-#[McpTool(
-    name: 'sylius_services_yaml_patch_exclude',
-    description: 'Idempotently add an entry to the App\\: (or detected namespace) exclude: list in config/services.yaml so explicit service defs are not silently overridden by the glob. Args: exclude (e.g. "../src/Form/Type/BackInStock"), dry_run (default false), app_namespace (default auto-detect). Returns patched body + written flag.',
-)]
 final class ServicesYamlPatchExclude
 {
     public function __construct(
@@ -23,6 +19,10 @@ final class ServicesYamlPatchExclude
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_services_yaml_patch_exclude',
+        description: 'Idempotently add an entry to the App\\: (or detected namespace) exclude: list in config/services.yaml so explicit service defs are not silently overridden by the glob. Args: exclude (e.g. "../src/Form/Type/BackInStock"), dry_run (default false), app_namespace (default auto-detect). Returns patched body + written flag.',
+    )]
     public function __invoke(string $exclude, bool $dry_run = false, ?string $app_namespace = null): array
     {
         if ('' === trim($exclude)) {

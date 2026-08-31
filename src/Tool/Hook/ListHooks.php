@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Hook;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Hook\HookablesReader;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 
-#[McpTool(
-    name: 'sylius_hooks_list',
-    description: 'List registered Sylius TwigHooks with hookable counts. Filter by name prefix (e.g. "sylius_shop.product.").',
-)]
 final class ListHooks
 {
     public function __construct(
@@ -22,6 +18,10 @@ final class ListHooks
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_hooks_list',
+        description: 'List registered Sylius TwigHooks with hookable counts. Filter by name prefix (e.g. "sylius_shop.product.").',
+    )]
     public function __invoke(?string $name_prefix = null, int $limit = 50, ?string $cursor = null): array
     {
         $hookables = $this->reader->readAll();

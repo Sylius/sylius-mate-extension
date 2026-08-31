@@ -1,6 +1,6 @@
-# sylius/mate-extension — Agent Instructions
+# sylius/sylius-mate-extension — Agent Instructions
 
-Read-only MCP tools exposing the Sylius runtime domain. Call before generating any Sylius code; call again to audit after.
+Mate CLI tools exposing the Sylius runtime domain — mostly read-only, the three mutating ones are flagged below. Invoke via `vendor/bin/mate tools:call <tool> --<param>=<value>` (nested values via `--json`). Call before generating any Sylius code; call again to audit after.
 
 ## Tool index
 

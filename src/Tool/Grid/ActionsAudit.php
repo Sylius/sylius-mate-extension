@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Grid;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 
-#[McpTool(
-    name: 'sylius_grid_actions_audit',
-    description: 'Validate the actions: block of a grid. Warns on common mistakes: main.delete (delete should live under item.* per row), item-only types in main, missing main.create, etc.',
-)]
 final class ActionsAudit
 {
     private const PARAMETER = 'sylius.grids_definitions';
@@ -26,6 +22,10 @@ final class ActionsAudit
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_grid_actions_audit',
+        description: 'Validate the actions: block of a grid. Warns on common mistakes: main.delete (delete should live under item.* per row), item-only types in main, missing main.create, etc.',
+    )]
     public function __invoke(string $grid_name): array
     {
         if ('' === trim($grid_name)) {

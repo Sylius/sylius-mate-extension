@@ -4,19 +4,15 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Twig;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\CallableDescriber;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 use Twig\Environment;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
 use Twig\TwigTest;
 
-#[McpTool(
-    name: 'sylius_twig_list_functions',
-    description: 'List registered Twig functions, filters and tests with their origin extension. Filter by name prefix (e.g. "sylius_"). Use to verify a Twig helper exists before referencing it.',
-)]
 final class ListFunctions
 {
     private const SERVICE_ID = 'twig';
@@ -29,6 +25,10 @@ final class ListFunctions
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_twig_list_functions',
+        description: 'List registered Twig functions, filters and tests with their origin extension. Filter by name prefix (e.g. "sylius_"). Use to verify a Twig helper exists before referencing it.',
+    )]
     public function __invoke(?string $name_prefix = null, ?string $kind = null, int $limit = 100, ?string $cursor = null): array
     {
         $kind = null === $kind ? null : strtolower($kind);

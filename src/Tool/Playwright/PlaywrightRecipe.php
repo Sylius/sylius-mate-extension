@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Playwright;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 
-#[McpTool(
-    name: 'sylius_playwright_recipe',
-    description: 'Emit a tests/Playwright/<slug>.spec.ts script for a Sylius flow. Pass custom steps OR template="back_in_stock_flow" preset. NEVER emit raw "doctrine:query:sql UPDATE" against entities observed by listeners — the listener will not fire. Mutations must go through bin/console commands (e.g. app:variant:restock) or the admin UI. The preset emits an execSync("bin/console app:variant:restock ...") helper so the inventory listener runs.',
-)]
 final class PlaywrightRecipe
 {
     public function __construct(
@@ -23,6 +19,10 @@ final class PlaywrightRecipe
      *
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_playwright_recipe',
+        description: 'Emit a tests/Playwright/<slug>.spec.ts script for a Sylius flow. Pass custom steps OR template="back_in_stock_flow" preset. NEVER emit raw "doctrine:query:sql UPDATE" against entities observed by listeners — the listener will not fire. Mutations must go through bin/console commands (e.g. app:variant:restock) or the admin UI. The preset emits an execSync("bin/console app:variant:restock ...") helper so the inventory listener runs.',
+    )]
     public function __invoke(
         string $feature_alias,
         string $title,
@@ -80,7 +80,7 @@ final class PlaywrightRecipe
                 'body' => $body,
             ]],
             null,
-            'Write the spec, then run via the Playwright MCP. Mutations on entities observed by Doctrine listeners MUST go through bin/console commands (use restockVariant helper). Pull mailer assertions from the Mate Symfony profiler MCP.',
+            'Write the spec, then run via the Playwright MCP. Mutations on entities observed by Doctrine listeners MUST go through bin/console commands (use restockVariant helper). Pull mailer assertions from the Mate Symfony profiler tools.',
         );
 
         if ([] !== $warnings) {
@@ -145,7 +145,7 @@ final class PlaywrightRecipe
                 "await page.getByRole('button', { name: /subscribe/i }).click()",
                 "await expect(page.getByText(/we will notify you/i)).toBeVisible()",
                 sprintf("restockVariant('%s', 10)", $variantCode),
-                "// hit GET /_profiler/<X-Debug-Token>.json?panel=mailer (or Mate profiler MCP) to assert the queued email",
+                "// hit GET /_profiler/<X-Debug-Token>.json?panel=mailer (or the Mate Symfony profiler tools) to assert the queued email",
                 sprintf("await page.goto('/en_US/products/%s')", $productSlug),
                 "await expect(page.getByTestId('back-in-stock-form')).toBeHidden()",
             ],
