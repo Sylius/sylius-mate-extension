@@ -201,7 +201,7 @@ empty/wrong host.
 6. Trigger restock through ORM: `bin/console app:variant:restock TSHIRT_S 10`.
    **Never** `doctrine:query:sql "UPDATE ..."` (R-PLAYWRIGHT-NO-RAW-SQL) -
    raw SQL bypasses UnitOfWork, so the listener in step 6 above never fires.
-7. Mate profiler MCP → `profiler_list_requests` → latest token for the
+7. Mate Symfony profiler tools → `symfony-profiler-list` → latest token for the
    restock request. Sync Messenger in dev ⇒ handler ran in the same request.
 8. **Email proof (R-EMAIL-PROOF).** Scrape `http://localhost:8025/api/v1/messages`
    (mailpit) for the matching subject + recipient + locale-correct body, OR

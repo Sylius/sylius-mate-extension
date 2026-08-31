@@ -10,12 +10,12 @@
 
 <h1 align="center">Sylius Mate Extension</h1>
 
-<p align="center">Dev-only Symfony AI Mate extension exposing the Sylius runtime domain to AI assistants via MCP.</p>
+<p align="center">Dev-only Symfony AI Mate extension exposing the Sylius runtime domain to AI coding agents via the Mate CLI.</p>
 
 ## About
 
 The Sylius Mate Extension is an [AI Mate](https://symfony.com/doc/current/ai/components/mate.html) extension for [**Sylius**](https://sylius.com).
-It exposes the Sylius runtime domain — resources, hooks, grids, routes, services, Twig helpers, mailer configuration — to AI assistants over the [Model Context Protocol (MCP)](https://modelcontextprotocol.io).
+It exposes the Sylius runtime domain — resources, hooks, grids, routes, services, Twig helpers, mailer configuration — to AI coding agents as [Mate CLI tools](https://symfony.com/doc/current/ai/components/mate.html), invoked with `vendor/bin/mate tools:call <tool>`.
 
 Every tool runs against the host project's booted Symfony kernel, so listings, inspections, and audits reflect the real container, real grid configuration, real route map, real installed plugins. Agents generate Sylius code against the actual shape of your application instead of hallucinating Twig helpers, routes, or resource patterns.
 
@@ -23,7 +23,7 @@ The extension is **dev-only**. Install it as a `require-dev` dependency; never s
 
 ## Documentation
 
-See [INSTRUCTIONS.md](INSTRUCTIONS.md) for the full description of every MCP tool, when to call it, and the hard rules agents must follow (Twig helper verification, route lookup, resource scaffolding, mutating-tool confirmation).
+See [INSTRUCTIONS.md](INSTRUCTIONS.md) for the full description of every tool, when to call it, and the hard rules agents must follow (Twig helper verification, route lookup, resource scaffolding, mutating-tool confirmation).
 
 General Sylius documentation is available at [docs.sylius.com](https://docs.sylius.com).
 
@@ -72,7 +72,8 @@ Useful Mate commands while developing:
 ```bash
 $ vendor/bin/mate debug:capabilities
 $ vendor/bin/mate debug:extensions
-$ vendor/bin/mate mcp:tools:list
+$ vendor/bin/mate tools:list
+$ vendor/bin/mate tools:call sylius_project_profile
 ```
 
 ## Contributing

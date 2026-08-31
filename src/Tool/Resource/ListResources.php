@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Resource;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
 use Sylius\Resource\Metadata\MetadataInterface;
 use Sylius\Resource\Metadata\RegistryInterface;
+use Symfony\AI\Mate\Attribute\MateTool;
 
-#[McpTool(
-    name: 'sylius_domain_list_resources',
-    description: 'List all registered Sylius resources (alias, model, interface, repository, factory, form). Filter by alias prefix.',
-)]
 final class ListResources
 {
     private const SERVICE_ID = 'sylius.resource_registry';
@@ -26,6 +22,10 @@ final class ListResources
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_domain_list_resources',
+        description: 'List all registered Sylius resources (alias, model, interface, repository, factory, form). Filter by alias prefix.',
+    )]
     public function __invoke(?string $alias_prefix = null, int $limit = 50, ?string $cursor = null): array
     {
         return Envelope::guard(fn (): array => $this->doList($alias_prefix, $limit, $cursor));

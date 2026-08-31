@@ -1007,7 +1007,7 @@ namespace <AppNs>\TwigComponent\<Section>;
 
 ❌ Wrong: spec drives only the entry step, asserts only the success flash. Misses the downstream trigger, the side effect, and the post-state.
 
-✅ Right: spec covers the whole user journey - setup → primary action → success flash → downstream trigger → side-effect assertion via profiler MCP → post-state UI check. `reference/worked-example.md` has a full instance.
+✅ Right: spec covers the whole user journey - setup → primary action → success flash → downstream trigger → side-effect assertion via the Mate profiler tools → post-state UI check. `reference/worked-example.md` has a full instance.
 
 **Why:** Bugs surface across step boundaries (listener idempotency, stale cache after state change, mailer ctx wrong, locale mismatch on async render). A spec that stops halfway through the flow rubber-stamps regressions.
 
@@ -1078,9 +1078,9 @@ bin/console cache:clear
 
 ✅ Right:
 
-Call MCP tool `sylius_cache_clear` exactly once before Playwright. The MCP tool is the boundary gate.
+Call the Mate tool `sylius_cache_clear` exactly once before Playwright. The Mate tool is the boundary gate.
 
-**Why:** The harness's Bash classifier enforces the CLAUDE.md rule at the shell level - there's no scoped exception to carve out for verify or Playwright prep. Moving the action to an MCP tool sidesteps the rule entirely; the tool is a mechanical override, not a shell call.
+**Why:** The harness's Bash classifier enforces the CLAUDE.md rule at the shell level - there's no scoped exception to carve out for verify or Playwright prep. Moving the action to a Mate tool sidesteps the rule entirely; the tool is a mechanical override, not a shell call.
 
 ## 36. Leaf hook target without parent visibility check
 
@@ -1100,7 +1100,7 @@ Widget meant for that OOS branch → hook never renders. Silent failure.
 
 ✅ Right:
 
-Call MCP `sylius_hooks_resolve_for_visibility` with feature state (`oos`):
+Call the Mate tool `sylius_hooks_resolve_for_visibility` with feature state (`oos`):
 
 ```yaml
 sylius_twig_hooks:
@@ -1142,7 +1142,7 @@ const match = messages.messages.find(m =>
 expect(match).toBeDefined();
 ```
 
-Or via Sylius Mate profiler MCP when the trigger is HTTP-driven:
+Or via the Mate Symfony profiler tools when the trigger is HTTP-driven:
 
 ```
 profiler_request_detail(token).mailer → assert message present
@@ -1538,7 +1538,7 @@ sylius_resource:
                 model: Elesto\Entity\<Feature>\<Name>
 ```
 
-**Why:** Sylius-Standard is one project. `App\` is not universal. Always read `composer.json` `autoload.psr-4` first matching `src/` entry. MCP `sylius_project_profile.app_namespace` returns it. Parameterize every scaffold.
+**Why:** Sylius-Standard is one project. `App\` is not universal. Always read `composer.json` `autoload.psr-4` first matching `src/` entry. The Mate tool `sylius_project_profile` returns it as `app_namespace`. Parameterize every scaffold.
 
 ## 51. Field-watching listener under a decorating plugin
 
@@ -1576,7 +1576,7 @@ foreach ($uow->getScheduledEntityUpdates() as $entity) {
 }
 ```
 
-**Why:** Plugin decorations move the source of truth - this is one concrete, always-true instance (MSI moves stock off `ProductVariant.onHand`), not specific to any one feature you might be building on top of it. Always call MCP `sylius_installed_plugins` before designing a listener / inventory checker / price service / channel resolver. Skip → ship dead code.
+**Why:** Plugin decorations move the source of truth - this is one concrete, always-true instance (MSI moves stock off `ProductVariant.onHand`), not specific to any one feature you might be building on top of it. Always call the Mate tool `sylius_installed_plugins` before designing a listener / inventory checker / price service / channel resolver. Skip → ship dead code.
 
 ## 52. Manual service in excluded dir without explicit autowire
 
@@ -1622,7 +1622,7 @@ translations/messages.en_US.yaml
 translations/messages.pl_PL.yaml
 ```
 
-**Why:** Read `sylius_locale.locales` (or fallback `framework.default_locale`). Emit one file per enabled locale. MCP `sylius_project_profile.locales` returns the list. Default to "single en_US file" only when project actually ships only en_US.
+**Why:** Read `sylius_locale.locales` (or fallback `framework.default_locale`). Emit one file per enabled locale. The Mate tool `sylius_project_profile` returns the list as `locales`. Default to "single en_US file" only when project actually ships only en_US.
 
 ## 54. Async URL generation without default_uri
 

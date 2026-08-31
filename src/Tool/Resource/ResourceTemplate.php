@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Resource;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 
-#[McpTool(
-    name: 'sylius_domain_resource_template',
-    description: 'Emit scaffold for a new Sylius Resource: entity, interface, repository + interface, form, sylius_resource yaml, grid yaml, form-type service yaml. By default no Factory class is emitted (Sylius wires the default Factory automatically). Opt-in flags: with_custom_factory (adds factory + interface + classes.factory line — signature MUST be __construct(string $className)); with_admin_hook; with_component (TwigComponent skeleton under App\\TwigComponent\\<Section>); mailer_code (sylius_mailer + email template); core_repos (list of Sylius core repo names whose interface aliases to expose, e.g. ["product_variant", "channel"]).',
-)]
 final class ResourceTemplate
 {
     /** @var array<string, string> */
@@ -37,6 +33,10 @@ final class ResourceTemplate
      *
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_domain_resource_template',
+        description: 'Emit scaffold for a new Sylius Resource: entity, interface, repository + interface, form, sylius_resource yaml, grid yaml, form-type service yaml. By default no Factory class is emitted (Sylius wires the default Factory automatically). Opt-in flags: with_custom_factory (adds factory + interface + classes.factory line — signature MUST be __construct(string $className)); with_admin_hook; with_component (TwigComponent skeleton under App\\TwigComponent\\<Section>); mailer_code (sylius_mailer + email template); core_repos (list of Sylius core repo names whose interface aliases to expose, e.g. ["product_variant", "channel"]).',
+    )]
     public function __invoke(
         string $alias,
         string $model_short_name,

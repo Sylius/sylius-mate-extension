@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Mailer;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 
-#[McpTool(
-    name: 'sylius_email_capture_status',
-    description: 'Inspect the active MAILER_DSN: transport type, whether delivery is observable (smtp/mailpit) or null-routed (null://), and a recommended action when delivery cannot be asserted. Call before any Playwright email assertion.',
-)]
 final class CaptureStatus
 {
     public function __construct(
@@ -22,6 +18,10 @@ final class CaptureStatus
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_email_capture_status',
+        description: 'Inspect the active MAILER_DSN: transport type, whether delivery is observable (smtp/mailpit) or null-routed (null://), and a recommended action when delivery cannot be asserted. Call before any Playwright email assertion.',
+    )]
     public function __invoke(): array
     {
         return Envelope::guard(fn (): array => $this->inspect());
@@ -42,7 +42,7 @@ final class CaptureStatus
         $captureUrl = $this->captureUrl($dsn, $scheme);
         $recommendation = $observable
             ? 'Email delivery is observable via this transport.'
-            : 'Switch MAILER_DSN to smtp://mailpit:1025 (Mailpit recommended) or assert via the Symfony profiler MCP (X-Debug-Token + mailer collector). Then call sylius_admin_restock_via_http to trigger a stock change that yields a profile token.';
+            : 'Switch MAILER_DSN to smtp://mailpit:1025 (Mailpit recommended) or assert via the Mate Symfony profiler tools (X-Debug-Token + mailer collector). Then call sylius_admin_restock_via_http to trigger a stock change that yields a profile token.';
 
         return Envelope::items(
             [[

@@ -4,19 +4,15 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Cache;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostKernelProvider;
 use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Filesystem\Filesystem;
 
-#[McpTool(
-    name: 'sylius_cache_clear',
-    description: 'PHP-native cache clear: boots the host kernel inside the MCP process and runs cache:clear programmatically through Symfony\\Bundle\\FrameworkBundle\\Console\\Application — never shells `bin/console`, so the harness Bash classifier cannot intercept it. Falls back to a direct removal of var/cache/<env>/ if the programmatic path fails.',
-)]
 final class CacheClear
 {
     public function __construct(
@@ -27,6 +23,10 @@ final class CacheClear
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_cache_clear',
+        description: 'PHP-native cache clear: boots the host kernel inside the Mate CLI process and runs cache:clear programmatically through Symfony\\Bundle\\FrameworkBundle\\Console\\Application — never shells `bin/console`, so the harness Bash classifier cannot intercept it. Falls back to a direct removal of var/cache/<env>/ if the programmatic path fails.',
+    )]
     public function __invoke(string $env = 'dev'): array
     {
         if (!preg_match('/^[a-z][a-z0-9_]*$/', $env)) {

@@ -6,17 +6,13 @@ namespace Sylius\MateExtension\Tool\Project;
 
 use Composer\Semver\Semver;
 use Composer\Semver\VersionParser;
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\ComposerPackageResolver;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Kernel\PackagistClient;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 
-#[McpTool(
-    name: 'sylius_plugin_compatibility',
-    description: 'For every sylius-plugin-type package in composer.lock, check whether its INSTALLED version supports target_sylius_version (reads the sylius/sylius constraint straight from that plugin\'s own vendor/<pkg>/composer.json, offline) and — when it does not — look up Packagist for the newest stable released version that does. Use before bumping sylius/sylius: sylius_installed_plugins gives you the current core version in the same call as the plugin list; this tool tells you, per plugin, whether the bump is safe as-is or which plugin version you need first. Packagist lookups are best-effort network calls (repo.packagist.org) — a failed lookup sets packagist_lookup=false, it does not fail the whole call.',
-)]
 final class PluginCompatibility
 {
     public function __construct(
@@ -28,6 +24,10 @@ final class PluginCompatibility
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_plugin_compatibility',
+        description: 'For every sylius-plugin-type package in composer.lock, check whether its INSTALLED version supports target_sylius_version (reads the sylius/sylius constraint straight from that plugin\'s own vendor/<pkg>/composer.json, offline) and — when it does not — look up Packagist for the newest stable released version that does. Use before bumping sylius/sylius: sylius_installed_plugins gives you the current core version in the same call as the plugin list; this tool tells you, per plugin, whether the bump is safe as-is or which plugin version you need first. Packagist lookups are best-effort network calls (repo.packagist.org) — a failed lookup sets packagist_lookup=false, it does not fail the whole call.',
+    )]
     public function __invoke(string $target_sylius_version): array
     {
         return Envelope::guard(fn (): array => $this->check($target_sylius_version));

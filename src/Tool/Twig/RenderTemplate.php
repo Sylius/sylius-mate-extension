@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Twig;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 use Twig\Environment;
 use Twig\Error\Error as TwigError;
 
-#[McpTool(
-    name: 'sylius_test_render_template',
-    description: 'Render a host Twig template with the given context (associative array) and return the output, or a structured error if rendering fails. Use to smoke-test a template for missing functions, syntax errors, undefined variables before running the app.',
-)]
 final class RenderTemplate
 {
     private const SERVICE_ID = 'twig';
@@ -28,6 +24,10 @@ final class RenderTemplate
      *
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_test_render_template',
+        description: 'Render a host Twig template with the given context (associative array) and return the output, or a structured error if rendering fails. Use to smoke-test a template for missing functions, syntax errors, undefined variables before running the app.',
+    )]
     public function __invoke(string $template, array $context = []): array
     {
         if ('' === trim($template)) {

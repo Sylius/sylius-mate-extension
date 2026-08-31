@@ -4,17 +4,13 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Hook;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Hook\HookablesReader;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
 use Sylius\TwigHooks\Hookable\HookableTemplate;
+use Symfony\AI\Mate\Attribute\MateTool;
 use Twig\Environment;
 
-#[McpTool(
-    name: 'sylius_hooks_resolve_for_visibility',
-    description: 'Given a feature visibility intent (oos | in_stock | always | logged_in | admin_only) and a context substring (e.g. "product.show.content.info.summary"), return hook targets classified into safe_hooks and unsafe_hooks. Unsafe = parent template short-circuits the hook call inside a {% if %} branch that the visibility cannot satisfy. Use before deciding where to attach a back-in-stock-style widget.',
-)]
 final class ResolveForVisibility
 {
     private const KNOWN_VISIBILITIES = ['oos', 'in_stock', 'always', 'logged_in', 'admin_only'];
@@ -35,6 +31,10 @@ final class ResolveForVisibility
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_hooks_resolve_for_visibility',
+        description: 'Given a feature visibility intent (oos | in_stock | always | logged_in | admin_only) and a context substring (e.g. "product.show.content.info.summary"), return hook targets classified into safe_hooks and unsafe_hooks. Unsafe = parent template short-circuits the hook call inside a {% if %} branch that the visibility cannot satisfy. Use before deciding where to attach a back-in-stock-style widget.',
+    )]
     public function __invoke(string $visibility, string $context, string $section = 'shop'): array
     {
         if (!\in_array($visibility, self::KNOWN_VISIBILITIES, true)) {

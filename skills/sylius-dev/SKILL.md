@@ -5,7 +5,7 @@ description: Build Sylius 2.x features idiomatically. Use for any task that adds
 
 # Sylius Vibe Feature
 
-You are building a feature in a Sylius 2.x project. Follow this brief. Never skip the MCP-first protocol or hard rules.
+You are building a feature in a Sylius 2.x project. Follow this brief. Never skip the Mate-first protocol or hard rules.
 
 ## Mental Model
 
@@ -15,17 +15,17 @@ You are building a feature in a Sylius 2.x project. Follow this brief. Never ski
 - **Factory + Repository, never EntityManager.** Controllers/handlers inject `FactoryInterface` + `RepositoryInterface`. Use `$repository->add($x)`. No `EntityManagerInterface` in controllers.
 - **Interfaces, never concretes.** Type-hint `ChannelInterface`, `ProductInterface`, `CustomerInterface`. Never `App\Entity\Channel\Channel`.
 
-## MCP-First Protocol (non-negotiable)
+## Mate-First Protocol (non-negotiable)
 
-Before writing ANY file, you MUST complete this discovery checklist (MCP calls where one exists):
+The `sylius_*` tools below are Mate CLI tools — invoke each as `vendor/bin/mate tools:call <tool> --<param>=<value>` (nested values via `--json`). Before writing ANY file, you MUST complete this discovery checklist (Mate tool calls where one exists):
 
 - `sylius_project_profile` - **first call, always.** Returns `app_namespace` (PSR-4 root, never hardcode `App\`), `locales` (enabled list for translation file emission), and feature flags. R-NAMESPACE-FROM-COMPOSER + R-MULTI-LOCALE depend on this.
 - `sylius_installed_plugins` - inventory installed Sylius plugins (MSI, wishlist, refund, multi-currency, b2b) before designing any listener / inventory checker / price service / channel resolver. R-PLUGIN-AWARENESS.
 - `sylius_domain_list_resources` - does target resource exist? Learn shape.
 - `sylius_hooks_find_for_template` - for UI placement.
-- **Domain event check.** Grep `vendor/sylius/*/src/**/SyliusEvents.php` for an existing event before reaching for a Doctrine listener. No MCP tool for this - these are compile-time constants, not kernel state, so a tool would just wrap the same grep.
+- **Domain event check.** Grep `vendor/sylius/*/src/**/SyliusEvents.php` for an existing event before reaching for a Doctrine listener. No Mate tool for this - these are compile-time constants, not kernel state, so a tool would just wrap the same grep.
 - `sylius_twig_list_functions` - verify any `sylius_*` Twig function before use.
-- **Mailer code check.** Read `sylius_mailer.emails.*` keys from `config/packages/_sylius_mailer.yaml` to confirm existing mailer code shape. No dedicated MCP list tool; `sylius_mailer_verify_template` confirms the final code+template pair in the verify pass.
+- **Mailer code check.** Read `sylius_mailer.emails.*` keys from `config/packages/_sylius_mailer.yaml` to confirm existing mailer code shape. No dedicated Mate list tool; `sylius_mailer_verify_template` confirms the final code+template pair in the verify pass.
 - `sylius_domain_list_grids` - mirror existing grid for admin CRUD.
 
 Before declaring DONE, you MUST execute this verify script. Every command output empty/passing. Any failure → STOP, fix, re-run. Do not report task complete with non-empty error output.
@@ -60,16 +60,16 @@ bin/console debug:router | grep <route_name>
 # 7. Messenger - handler registered (if async)
 bin/console messenger:debug | grep <MessageClass>
 
-# 8. MCP verify (mandatory):
-#    sylius_resource_inspect <alias>          - every new resource
-#    sylius_routes_show <route_name>          - every new route
-#    sylius_mailer_verify_template <code>     - every new email code
-#    sylius_hooks_find_for_template <path>    - confirm hook still resolves
+# 8. Mate verify (mandatory), via vendor/bin/mate tools:call:
+#    sylius_resource_inspect --alias=<alias>          - every new resource
+#    sylius_routes_show --name=<route_name>           - every new route
+#    sylius_mailer_verify_template --code=<code>      - every new email code
+#    sylius_hooks_find_for_template --template_path=<path> - confirm hook still resolves
 ```
 
-If the [Sylius Mate Extension](https://github.com/Sylius/sylius-mate-extension) MCP is not loaded:
+If the Mate CLI with the [Sylius Mate Extension](https://github.com/Sylius/sylius-mate-extension) is not available (`vendor/bin/mate tools:list` fails or lists no `sylius_*` tools):
 
-1. Tell user once: "Install `sylius/mate-extension` for full guidance. Continuing best-effort."
+1. Tell user once: "Install `sylius/sylius-mate-extension` for full guidance. Continuing best-effort."
 2. Fall back to filesystem reads:
    - `sylius_project_profile` → read `composer.json` (`autoload.psr-4` first entry pointing at `src/` → app namespace) + `config/packages/_sylius.yaml` (`sylius_locale.locales`) + `.env` (`APP_DEFAULT_URI`).
    - `sylius_installed_plugins` → grep `composer.json` `require` for `sylius/*-plugin` entries.
@@ -103,7 +103,7 @@ Full checklist in `workflow.md`. Summary:
 8. Async handler `#[AsMessageHandler]` + Sylius `SenderInterface` for email. Send context MUST include `channel` + `localeCode` + resource.
 9. Mailer config under `sylius_mailer.emails.<code>` + template `templates/email/<code>.html.twig` extending `@SyliusCore/Email/layout.html.twig` with `subject` + `content` blocks.
 9.5. **Email template gate.** If feature dispatches email: scaffold template from skeleton (extends layout, two blocks, helper `set` inside block). Verify mailer-config `template:` path matches file path.
-9.6. **Translation gate.** Any new `translations/messages.*.yaml` filename MUST match exact shop locale (e.g. `en_US`, not `en`). Cache rewarm is handled by MCP `sylius_cache_clear` or project setup, not by this skill.
+9.6. **Translation gate.** Any new `translations/messages.*.yaml` filename MUST match exact shop locale (e.g. `en_US`, not `en`). Cache rewarm is handled by the Mate tool `sylius_cache_clear` or project setup, not by this skill.
 10. Verify pass - run the verify script above. STOP on any failure.
 11. **Playwright acceptance (mandatory).** Author a repeatable spec file under `tests/Playwright/<feature>.spec.ts`, run it via Playwright MCP, refuse "done" if spec fails. No exploratory one-shot calls. Protocol below.
 
@@ -146,13 +146,13 @@ Details + ✅ replacements in `anti-patterns.md`. Refuse-list:
 - ❌ **R-EXCLUDE-EXPLICIT-DIRS.** Writing an explicit service def in a directory NOT on the `<AppNs>\:` glob `exclude` list. Autoregister silently clobbers the explicit def - `arguments` dropped, `tags` dropped. `debug:container` may still show the class (tag from autoconfigure) but wired wrong. Append the dir to `exclude:` in the same write. See `reference/services.md` for the standard exclude block.
 - ❌ **R-IMPORTS-SERVICES-DIR violation.** Explicit service defs inlined into `config/services.yaml`. Use `imports: { resource: 'services/' }` + per-feature file under `config/services/app_<feature>.yaml`. `services.yaml` stays stable; feature files isolated.
 - ❌ **R-PLAYWRIGHT-NO-RAW-SQL.** Playwright spec triggering changes to an entity observed by a Doctrine listener via raw SQL (`bin/console doctrine:query:sql "UPDATE ..."`). Raw SQL bypasses UnitOfWork → listener never fires → handler never runs → assertion against the side-effect (a DB flag, dispatched message, sent email) fails. Use a CLI command that goes through ORM, an admin UI flow via Playwright, or an API call - see `reference/worked-example.md` for a concrete restock command.
-- ❌ **R-HOOK-VISIBILITY.** Selecting a `sylius_twig_hooks` leaf target without confirming the parent template renders it in the feature's target state. Leaf hooks under `*.add_to_cart`, `*.add_to_cart.variants.*` live inside `{% if %}` branches that short-circuit when variant unavailable. For a widget that only makes sense while its precondition doesn't hold (e.g. out-of-stock-only), the `add_to_cart` sub-tree is dead. Use the parent hook (`sylius_shop.product.show.content.info.summary`) that fires unconditionally. Call MCP `sylius_hooks_resolve_for_visibility` with feature visibility state (`oos` / `in_stock` / `always`) to get valid targets - do not guess from hook name suffix.
+- ❌ **R-HOOK-VISIBILITY.** Selecting a `sylius_twig_hooks` leaf target without confirming the parent template renders it in the feature's target state. Leaf hooks under `*.add_to_cart`, `*.add_to_cart.variants.*` live inside `{% if %}` branches that short-circuit when variant unavailable. For a widget that only makes sense while its precondition doesn't hold (e.g. out-of-stock-only), the `add_to_cart` sub-tree is dead. Use the parent hook (`sylius_shop.product.show.content.info.summary`) that fires unconditionally. Call the Mate tool `sylius_hooks_resolve_for_visibility` with feature visibility state (`oos` / `in_stock` / `always`) to get valid targets - do not guess from hook name suffix.
 - ❌ **R-EMAIL-PROOF.** Playwright asserting a handler-written DB flag (e.g. `notifiedAt IS NOT NULL`) as proof of email delivery. Handler reaches end-of-loop even when `null://null` swallows the message - false positive. Acceptable proofs: (1) capture transport (mailpit/mailhog) - scrape `http://localhost:8025/api/v1/messages`, (2) profiler mailer collector - works ONLY when the triggering mutation happened via HTTP. A CLI-triggered mutation bypasses profiler. If neither available, spec prints `// TODO: assert email via mailpit/profiler` rather than passing on a DB-flag check it can't trust.
 - ❌ **R-NOT-FOUND-EXCEPTION.** Throwing `\RuntimeException` (or any non-HTTP exception) from controller for resource-not-found. Renders HTTP 500 stack trace to shopper. Always `throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();` → HTTP 404 through Sylius error templates.
 - ❌ **R-MAILER-CONFIG-TRANSLATION-KEY.** `sylius_mailer.emails.<code>.subject:` as literal English. Always a translation key: `subject: app.email.<code>.subject`. Template `{% block subject %}` overrides at render time, but config-level key keeps the indirection consistent.
 - ❌ **R-FORM-PARENT-BUILDFORM.** Form type extending `AbstractResourceType` whose `buildForm()` does not call `parent::buildForm($builder, $options)` first. Future-proofs against Sylius adding parent behavior.
 - ❌ **R-EM scope (tightened).** `EntityManagerInterface` injection in any feature service (controller, handler, listener, helper) when a Resource exists. Use `RepositoryInterface::add($x)` - Sylius `EntityRepository::add()` does persist+flush idempotently for both new and existing managed entities. Exception: bulk operations where DBAL/QueryBuilder beats per-row flush.
-- ❌ **Ad-hoc `bin/console cache:clear` via Bash.** Project rule (CLAUDE.md) forbids it. The harness's auto-mode classifier intercepts even MCP-tool Bash invocations of it, so there's no carve-out. Cache:clear is owned by MCP `sylius_cache_clear` tool impl (must bypass Bash entirely) or project CLAUDE.md preset, not by this skill.
+- ❌ **Ad-hoc `bin/console cache:clear` via Bash.** Project rule (CLAUDE.md) forbids it. The harness's auto-mode classifier intercepts even tool-driven Bash invocations of it, so there's no carve-out. Cache:clear is owned by the Mate tool `sylius_cache_clear` impl (must bypass Bash entirely) or project CLAUDE.md preset, not by this skill.
 - ❌ **R-CONTROLLER-INVOKABLE.** `extends AbstractController` in a feature controller. Use `final` invokable services. Inject `FormFactoryInterface` (call `$this->formFactory->create(...)`, not `$this->createForm(...)`), `UrlGeneratorInterface` (`$this->urlGenerator->generate(...)`, not `$this->generateUrl(...)`). Flash via `$request->getSession()->getFlashBag()->add(...)`, not `$this->addFlash(...)`. `App\Controller\` glob w/ `controller.service_arguments` tag covers DI.
 - ❌ **R-DOCTRINE-LISTENER-ATTRIBUTE hybrid.** `#[AsDoctrineListener]` (or `#[Autoconfigure(tags:[...])]`) on class AND explicit `doctrine.event_listener` yaml tag together. With `autoconfigure: true`, both registrations apply → listener fires twice per event. Attribute-only is canonical. See `reference/events.md` for accepted patterns + rare yaml-only fallback.
 - ❌ **R-FORM-SVC dual pattern.** `app.form.type.<x>` id + FQCN alias dual declaration. Collapse to single FQCN-keyed service. See `reference/services.md`.
@@ -176,7 +176,7 @@ Details + ✅ replacements in `anti-patterns.md`. Refuse-list:
   - Sub-namespace OK: `App\Entity\<Feature>\<X>`, `App\Form\Type\<Feature>\<X>Type`.
   - FLAT only: `App\Repository\<X>Repository`, `App\Factory\<X>Factory`, `App\EventListener\<X>Listener`, `App\Message\<X>`, `App\MessageHandler\<X>Handler`.
 - ❌ **R-FEATURE-DONE-INCLUDES-ADMIN.** Declaring a persisted-state feature "done" without admin grid + admin route. Verify `sylius_grid.grids.app_admin_<feature>` exists AND `debug:router | grep app_admin_<feature>_index` returns a hit before marking done.
-- ❌ **R-NAMESPACE-FROM-COMPOSER.** Hardcoding `App\` in any scaffold. Always read `composer.json` `autoload.psr-4` → derive app root namespace (`App\\`, `Elesto\\`, `Acme\\Shop\\`, etc.). Use first PSR-4 entry pointing at `src/`. Parameterize every scaffold input on it. MCP `sylius_project_profile.app_namespace` returns it.
+- ❌ **R-NAMESPACE-FROM-COMPOSER.** Hardcoding `App\` in any scaffold. Always read `composer.json` `autoload.psr-4` → derive app root namespace (`App\\`, `Elesto\\`, `Acme\\Shop\\`, etc.). Use first PSR-4 entry pointing at `src/`. Parameterize every scaffold input on it. The Mate tool `sylius_project_profile` returns it as `app_namespace`.
 - ❌ **R-PLUGIN-AWARENESS.** Designing inventory / pricing / order / availability / channel logic without first inventorying installed Sylius plugins that decorate the relevant service. Critical detections:
   - `sylius/multi-source-inventory-plugin` → stock lives in `InventorySourceStockInterface` rows, NOT `ProductVariant.onHand`. Doctrine listener watching `onHand` is dead under MSI.
   - `sylius/wishlist-plugin` → custom wishlist resource.
@@ -184,9 +184,9 @@ Details + ✅ replacements in `anti-patterns.md`. Refuse-list:
   - `sylius/multi-currency-pricing-plugin` → channel pricing changed.
   - `sylius/b2b-plugin` → customer permissions altered.
 
-  Call MCP `sylius_installed_plugins` before listener / inventory checker / price service design.
+  Call the Mate tool `sylius_installed_plugins` before listener / inventory checker / price service design.
 - ❌ **R-GLOB-EXCLUDED-DIR-AUTOWIRE.** Manual service def in a dir excluded from `<AppNs>\:` glob without explicit `autowire: true, autoconfigure: true`. `_defaults` inheritance is opaque - explicit beats implicit. See `reference/services.md`. Verify via `bin/console debug:container --show-arguments <FQCN>`.
-- ❌ **R-MULTI-LOCALE.** Single `messages.<one_locale>.yaml` when project has multiple enabled locales. Read `sylius_locale.locales` (or `framework.default_locale` fallback) - emit one translation file per enabled locale. MCP `sylius_project_profile.locales` returns the list.
+- ❌ **R-MULTI-LOCALE.** Single `messages.<one_locale>.yaml` when project has multiple enabled locales. Read `sylius_locale.locales` (or `framework.default_locale` fallback) - emit one translation file per enabled locale. The Mate tool `sylius_project_profile` returns the list as `locales`.
 - ❌ **R-DEFAULT-URI.** Feature that generates URLs from Messenger handlers / CLI / non-HTTP contexts without `framework.router.default_uri` set. Detect via `bin/console debug:config framework.router`; if absent, add to feature yaml or `framework.yaml`. Without it, `url()` in email template renders empty/wrong host.
 
 ## Event Source Decision
@@ -206,12 +206,12 @@ Full yaml block + notes (incl. `Sylius\Component\Channel\Repository\ChannelRepos
 
 ## Cache Clear
 
-Not the skill's responsibility. CLAUDE.md forbids `bin/console cache:clear`; the harness auto-mode classifier denies even MCP tools that shell out to it. Cache:clear is owned by:
+Not the skill's responsibility. CLAUDE.md forbids `bin/console cache:clear`; the harness auto-mode classifier denies even tools that shell out to it. Cache:clear is owned by:
 
-- MCP `sylius_cache_clear` tool impl - must bypass Bash entirely (FS ops + cache warmup via Symfony Kernel API), OR
+- the Mate tool `sylius_cache_clear` impl - must bypass Bash entirely (FS ops + cache warmup via Symfony Kernel API), OR
 - Project CLAUDE.md preset that grants the exception.
 
-Skill assumes the cache is fresh enough or that the MCP tool / project setup handles it. Never invoke `cache:clear` via Bash.
+Skill assumes the cache is fresh enough or that the Mate tool / project setup handles it. Never invoke `cache:clear` via Bash.
 
 ## Code Style
 
@@ -227,16 +227,16 @@ End-of-workflow live run. Author a **repeatable spec file** at `tests/Playwright
 
 **Coverage rule:** spec must drive ALL observable user paths in the feature, not just the happy entry point - setup, the user action, the downstream trigger, any email assertion, AND the post-change UI state (e.g. a widget disappearing once its precondition no longer holds). Single-step specs are rejected.
 
-**Pre-req:** if MCP tool `sylius_cache_clear` available, call it once before the spec. Otherwise rely on project setup. NEVER `bin/console cache:clear` via Bash.
+**Pre-req:** if the Mate tool `sylius_cache_clear` is available, call it once before the spec. Otherwise rely on project setup. NEVER `bin/console cache:clear` via Bash.
 
-0. **Pre-verify cache clear.** If MCP `sylius_cache_clear` available, call once. Else rely on project setup. NEVER `bin/console cache:clear` via Bash.
+0. **Pre-verify cache clear.** If the Mate tool `sylius_cache_clear` is available, call once. Else rely on project setup. NEVER `bin/console cache:clear` via Bash.
 1. Ensure dev server up. Project context provides URL (default `http://localhost:8000`). If down, ask user to start it - do not silently skip.
 2. **Setup state.** Force the feature's precondition (e.g. a resource into its "before" state) via a project CLI command or fixture preset - never a hand-rolled `UPDATE`.
 3. `browser_navigate` → the page the feature's UI lives on. `browser_snapshot` → assert feature widget visible (form, button, badge).
 4. `browser_type` / `browser_fill_form` → fill required inputs (e.g. email).
 5. `browser_click` → submit. `browser_snapshot` → assert success flash / state change.
 6. Trigger the downstream condition through ORM (CLI command, admin UI flow, or API call). NEVER raw SQL (`doctrine:query:sql "UPDATE ..."`) - R-PLAYWRIGHT-NO-RAW-SQL: bypasses UoW → Doctrine listener never fires → handler never runs → assertion fails.
-7. Mate profiler MCP → `profiler_list_requests` filtered by URL / method / recency → pick latest matching token. Sync Messenger transport in dev ⇒ handler ran in same request ⇒ same token covers email dispatch.
+7. Mate Symfony profiler tools → `symfony-profiler-list` filtered by URL / method / recency → pick latest matching token. Sync Messenger transport in dev ⇒ handler ran in same request ⇒ same token covers email dispatch.
 8. **Email proof (R-EMAIL-PROOF).** Assert email via inspectable target - NOT a DB column:
    - Capture transport (mailpit/mailhog) - scrape `http://localhost:8025/api/v1/messages` for matching subject + recipient + locale-correct body.
    - OR profiler mailer collector - works ONLY if the triggering mutation happened via HTTP request (admin form / API). A CLI-triggered mutation bypasses profiler.
@@ -248,7 +248,7 @@ If feature has no email leg: stop at step 5. If feature has no async leg: skip s
 
 ## Linked Files
 
-- `workflow.md` - 13-step build checklist with MCP calls + verify commands.
+- `workflow.md` - 13-step build checklist with Mate tool calls + verify commands.
 - `anti-patterns.md` - ❌/✅ pairs per hard rule with "Why" line.
 - `reference/resource.md`, `reference/twig-hooks.md`, `reference/mailer.md`, `reference/events.md`, `reference/services.md` - deep dives, fetch on demand.
 - `reference/worked-example.md` - one feature (back-in-stock notifications) built end to end, concretely, tagged against the rule IDs above. Every other file in this skill is written generically; this is the file that proves it out on a real case.

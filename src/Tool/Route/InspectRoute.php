@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Route;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouterInterface;
 
-#[McpTool(
-    name: 'sylius_route_inspect',
-    description: 'Deeper diagnostic for a single Symfony route: path, methods, controller, host, loader-derived metadata, and duplicate-segment detection (catches double-prefix bugs where the same path segment appears twice due to outer prefix + sylius.resource loader).',
-)]
 final class InspectRoute
 {
     private const SERVICE_ID = 'router';
@@ -26,6 +22,10 @@ final class InspectRoute
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_route_inspect',
+        description: 'Deeper diagnostic for a single Symfony route: path, methods, controller, host, loader-derived metadata, and duplicate-segment detection (catches double-prefix bugs where the same path segment appears twice due to outer prefix + sylius.resource loader).',
+    )]
     public function __invoke(string $name): array
     {
         if ('' === trim($name)) {

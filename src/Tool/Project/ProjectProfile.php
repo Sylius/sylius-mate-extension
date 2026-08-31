@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Project;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 use Webmozart\Assert\Assert;
 
-#[McpTool(
-    name: 'sylius_project_profile',
-    description: 'Auto-detect the host project shape: app namespace (from composer.json psr-4), src/config/translations dirs, enabled locales, default locale, default channel, MAILER_DSN observability, messenger transport mode, services.yaml App\\ glob exclude entries, hook config dir convention. Every other scaffold tool should consume this profile to stop hardcoding App\\, messages.en_US.yaml, single-locale assumptions.',
-)]
 final class ProjectProfile
 {
     public function __construct(
@@ -24,6 +20,10 @@ final class ProjectProfile
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_project_profile',
+        description: 'Auto-detect the host project shape: app namespace (from composer.json psr-4), src/config/translations dirs, enabled locales, default locale, default channel, MAILER_DSN observability, messenger transport mode, services.yaml App\\ glob exclude entries, hook config dir convention. Every other scaffold tool should consume this profile to stop hardcoding App\\, messages.en_US.yaml, single-locale assumptions.',
+    )]
     public function __invoke(): array
     {
         return Envelope::guard(fn (): array => $this->profile());

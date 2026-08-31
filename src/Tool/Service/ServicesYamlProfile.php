@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Service;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 use Symfony\Component\Yaml\Yaml;
 
-#[McpTool(
-    name: 'sylius_services_yaml_profile',
-    description: 'Inspect the host project DI profile (defaults autowire/autoconfigure/public, _instanceof overrides, app resource glob + excludes, controller glob). Use once per session to know how to register a new class so it ends up in the container.',
-)]
 final class ServicesYamlProfile
 {
     public function __construct(
@@ -24,6 +20,10 @@ final class ServicesYamlProfile
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_services_yaml_profile',
+        description: 'Inspect the host project DI profile (defaults autowire/autoconfigure/public, _instanceof overrides, app resource glob + excludes, controller glob). Use once per session to know how to register a new class so it ends up in the container.',
+    )]
     public function __invoke(): array
     {
         if (!class_exists(Yaml::class)) {

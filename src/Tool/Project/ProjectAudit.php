@@ -4,15 +4,11 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Project;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 
-#[McpTool(
-    name: 'sylius_project_audit',
-    description: 'Run baseline Sylius-Standard convention checks against the host project: services.yaml glob excludes, core repo aliases, sync messenger in dev, framework.router.default_uri, mailer DSN observable, twig_hooks dir, project CLAUDE.md cache-clear allowance. Returns checks[] with present|absent|partial|divergent + patches_available hints. Call once per session to surface baseline gaps.',
-)]
 final class ProjectAudit
 {
     private const REQUIRED_APP_EXCLUDES = [
@@ -37,6 +33,10 @@ final class ProjectAudit
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_project_audit',
+        description: 'Run baseline Sylius-Standard convention checks against the host project: services.yaml glob excludes, core repo aliases, sync messenger in dev, framework.router.default_uri, mailer DSN observable, twig_hooks dir, project CLAUDE.md cache-clear allowance. Returns checks[] with present|absent|partial|divergent + patches_available hints. Call once per session to surface baseline gaps.',
+    )]
     public function __invoke(): array
     {
         return Envelope::guard(fn (): array => $this->audit());

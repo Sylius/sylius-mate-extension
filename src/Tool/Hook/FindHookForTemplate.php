@@ -4,15 +4,11 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Hook;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Hook\HookablesReader;
 use Sylius\MateExtension\Output\Envelope;
 use Sylius\TwigHooks\Hookable\HookableTemplate;
+use Symfony\AI\Mate\Attribute\MateTool;
 
-#[McpTool(
-    name: 'sylius_hooks_find_for_template',
-    description: 'Return the hooks that render a given Twig template path. Use to confirm UI placement before overriding a template.',
-)]
 final class FindHookForTemplate
 {
     public function __construct(
@@ -23,6 +19,10 @@ final class FindHookForTemplate
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_hooks_find_for_template',
+        description: 'Return the hooks that render a given Twig template path. Use to confirm UI placement before overriding a template.',
+    )]
     public function __invoke(string $template_path): array
     {
         if ('' === trim($template_path)) {

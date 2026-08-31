@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Grid;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 
-#[McpTool(
-    name: 'sylius_domain_list_grids',
-    description: 'List configured Sylius grids: name, driver, resource class, fields, filters, actions. Filter by name prefix (e.g. "sylius_admin_").',
-)]
 final class ListGrids
 {
     private const PARAMETER = 'sylius.grids_definitions';
@@ -24,6 +20,10 @@ final class ListGrids
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_domain_list_grids',
+        description: 'List configured Sylius grids: name, driver, resource class, fields, filters, actions. Filter by name prefix (e.g. "sylius_admin_").',
+    )]
     public function __invoke(?string $name_prefix = null, int $limit = 50, ?string $cursor = null): array
     {
         $container = $this->host->getContainer();

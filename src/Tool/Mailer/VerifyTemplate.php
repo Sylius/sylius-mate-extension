@@ -4,15 +4,11 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Mailer;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 use Twig\Environment;
 
-#[McpTool(
-    name: 'sylius_mailer_verify_template',
-    description: 'For a registered Sylius mailer email code, verify the configured Twig template exists in the loader and is not empty. Catches the L + empty-template gap before runtime.',
-)]
 final class VerifyTemplate
 {
     private const PARAMETER = 'sylius.mailer.emails';
@@ -27,6 +23,10 @@ final class VerifyTemplate
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_mailer_verify_template',
+        description: 'For a registered Sylius mailer email code, verify the configured Twig template exists in the loader and is not empty. Catches the L + empty-template gap before runtime.',
+    )]
     public function __invoke(string $code): array
     {
         if ('' === trim($code)) {

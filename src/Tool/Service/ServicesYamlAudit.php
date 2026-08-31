@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Service;
 
-use Mcp\Capability\Attribute\McpTool;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateTool;
 use Symfony\Component\Yaml\Yaml;
 
-#[McpTool(
-    name: 'sylius_services_yaml_audit',
-    description: 'Audit host config/services.yaml + every imported config/services/*.yaml. Catches the explicit-def-vs-App\\:-glob conflict (postmortem #1+#2): when a service has an explicit definition under a path that is also covered by the App\\: glob, the glob silently overrides the explicit def. Returns per-conflict fix hint.',
-)]
 final class ServicesYamlAudit
 {
     public function __construct(
@@ -24,6 +20,10 @@ final class ServicesYamlAudit
     /**
      * @return array<string, mixed>
      */
+    #[MateTool(
+        name: 'sylius_services_yaml_audit',
+        description: 'Audit host config/services.yaml + every imported config/services/*.yaml. Catches the explicit-def-vs-App\\:-glob conflict (postmortem #1+#2): when a service has an explicit definition under a path that is also covered by the App\\: glob, the glob silently overrides the explicit def. Returns per-conflict fix hint.',
+    )]
     public function __invoke(): array
     {
         return Envelope::guard(fn (): array => $this->doAudit());

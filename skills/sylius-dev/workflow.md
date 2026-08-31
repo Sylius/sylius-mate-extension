@@ -1,20 +1,20 @@
 # Workflow - Sylius Feature Build
 
-13 steps. Each step: goal, MCP tool (if any), output, verification.
+13 steps. Each step: goal, Mate tool (if any; invoke as `vendor/bin/mate tools:call <tool> --<param>=<value>`), output, verification.
 
 ## 1. Discover
 
 **Goal:** Map existing surface before generating anything.
 
-**Discovery calls (in order, MCP where one exists):**
+**Discovery calls (in order, Mate tool where one exists):**
 
 - `sylius_project_profile` - **first**. Returns `app_namespace` (PSR-4 root from composer.json; never assume `<AppNs>\`), `locales` (enabled list - emit one translation file per), `default_uri_present` (R-DEFAULT-URI gate), feature flags.
 - `sylius_installed_plugins` - inventory active Sylius plugins. Critical: MSI changes stock storage to `InventorySourceStockInterface`; wishlist, refund, multi-currency-pricing, b2b decorate core services. Adjust listener target / query target accordingly (R-PLUGIN-AWARENESS).
 - `sylius_domain_list_resources` - does target resource already exist?
 - `sylius_hooks_find_for_template` - which TwigHook entry slot fits the UI change?
 - `sylius_hooks_resolve_for_visibility` - given feature visibility state (`oos` / `in_stock` / `always` / `logged_in_only`), returns hook targets whose parent template renders in that state. **Mandatory** before selecting a leaf hook (R-HOOK-VISIBILITY). Leaf hooks like `*.add_to_cart.*` live inside `{% if %}` branches that short-circuit when variant unavailable; for an out-of-stock-only feature they are dead.
-- **Domain event check.** Grep `vendor/sylius/*/src/**/SyliusEvents.php` for an existing event covering the trigger. No MCP tool for this - these are compile-time constants, not kernel state.
-- **Mailer code check.** Read `sylius_mailer.emails.*` keys from `config/packages/_sylius_mailer.yaml` for existing mailer codes. No dedicated MCP list tool; `sylius_mailer_verify_template` confirms the final code+template pair later (step 9.5).
+- **Domain event check.** Grep `vendor/sylius/*/src/**/SyliusEvents.php` for an existing event covering the trigger. No Mate tool for this - these are compile-time constants, not kernel state.
+- **Mailer code check.** Read `sylius_mailer.emails.*` keys from `config/packages/_sylius_mailer.yaml` for existing mailer codes. No dedicated Mate list tool; `sylius_mailer_verify_template` confirms the final code+template pair later (step 9.5).
 - `sylius_domain_list_grids` - closest existing grid to mirror.
 
 **Output:** Notes in scratch - chosen hook name, chosen event class, chosen mailer code, grid template to mirror.
@@ -25,7 +25,7 @@
 
 **Goal:** Register persisted thing as Sylius resource with mandatory surrounding kit.
 
-**MCP calls:**
+**Mate tool calls:**
 
 - `sylius_domain_resource_template` - entity/repo/factory/form scaffold shape, including an admin grid yaml stub (no separate grid-template call needed).
 - `sylius_domain_list_grids` - mirror the closest existing grid's fields/filters/actions onto that stub.
@@ -63,7 +63,7 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
 - `bin/console debug:container app.factory.<alias>`
 - `bin/console debug:router | grep admin_<alias>`
 - `bin/console lint:yaml config/`
-- `sylius_resource_inspect <alias>`
+- `sylius_resource_inspect --alias=<alias>`
 
 ## 3. Migration
 
@@ -121,7 +121,7 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
 
 **Hook target selection (R-HOOK-VISIBILITY):**
 
-- Resolve target via `sylius_hooks_resolve_for_visibility` MCP tool with feature state. Never guess from hook name suffix.
+- Resolve target via `sylius_hooks_resolve_for_visibility` Mate tool with feature state. Never guess from hook name suffix.
 - Out-of-stock-only widgets → parent hook (`sylius_shop.product.show.content.info.summary`), NOT `add_to_cart` sub-tree (dead branch when variant unavailable).
 - In-stock-only features → `add_to_cart` and children OK.
 - Always-visible → any hook fires.
@@ -185,7 +185,7 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
 
 - `bin/console debug:router | grep <route>`
 - `bin/console debug:container --show-arguments <FQCN>` - every constructor arg must resolve to a concrete service. No "no matching" / "multiple" / autowiring failures.
-- `sylius_routes_show <route_name>`
+- `sylius_routes_show --name=<route_name>`
 
 ## 7. Listener
 
@@ -337,13 +337,13 @@ If feature dispatches email:
 - Scaffold template from skeleton above.
 - Verify `sylius_mailer.emails.<code>.template` value equals the actual file path under `templates/`.
 
-**Verify:** `sylius_mailer_verify_template <code>`.
+**Verify:** `sylius_mailer_verify_template --code=<code>`.
 
 ## 9.6. Translation gate (R-MULTI-LOCALE)
 
 If feature uses any translation key:
 
-- Read `sylius_locale.locales` (fallback: `framework.default_locale`). MCP `sylius_project_profile.locales` returns the list.
+- Read `sylius_locale.locales` (fallback: `framework.default_locale`). The Mate tool `sylius_project_profile` returns the list as `locales`.
 - Emit ONE `translations/messages.<locale>.yaml` per enabled locale. Sylius-Standard ships `en_US`; Elesto ships `en_US` + `pl_PL`; per-project varies.
 - Filename matches exact locale string (variant included). `messages.en_US.yaml`, NOT `messages.en.yaml`.
 - No separate cache reminder - verify-step targeted translation cache wipe handles it.
@@ -391,35 +391,35 @@ curl -sX DELETE http://localhost:8025/api/v1/messages
 # 10. Behat dry-run (only if .feature authored)
 vendor/bin/behat features/<area>/<name>.feature --dry-run
 
-# 11. MCP verify (mandatory)
-#   sylius_resource_inspect <alias>
-#   sylius_routes_show <route_name>
-#   sylius_mailer_verify_template <code>
-#   sylius_hooks_find_for_template <template_path>
+# 11. Mate verify (mandatory), via vendor/bin/mate tools:call
+#   sylius_resource_inspect --alias=<alias>
+#   sylius_routes_show --name=<route_name>
+#   sylius_mailer_verify_template --code=<code>
+#   sylius_hooks_find_for_template --template_path=<template_path>
 
 # 12. Feature-done gate (R-FEATURE-DONE-INCLUDES-ADMIN) - no single pass/fail
 #     tool; composed from checks already run above:
 #   - step 7's `debug:router | grep app_admin_<feature>_index` returned a hit
 #   - `sylius_grid.grids.app_admin_<feature>` exists in config/packages/_sylius_grid.yaml
-#   - step 11's `sylius_resource_inspect <alias>` passed
+#   - step 11's `sylius_resource_inspect --alias=<alias>` passed
 ```
 
 Do **not** run `bin/console fos:elastica:populate` automatically (CLAUDE.md). Tell user.
 
 ## 10.5. Pre-Playwright Cache Clear
 
-Not the skill's responsibility. The harness auto-mode classifier denies even MCP-tool Bash invocations of `cache:clear`. Cache:clear is owned by:
+Not the skill's responsibility. The harness auto-mode classifier denies even tool-driven Bash invocations of `cache:clear`. Cache:clear is owned by:
 
-- MCP `sylius_cache_clear` tool impl (must bypass Bash - use Symfony Kernel FS ops), OR
+- the Mate tool `sylius_cache_clear` impl (must bypass Bash - use Symfony Kernel FS ops), OR
 - Project CLAUDE.md preset.
 
-If MCP tool available, call it once. Otherwise skip and assume project setup. NEVER invoke `bin/console cache:clear` via Bash, at any point.
+If the Mate tool is available, call it once. Otherwise skip and assume project setup. NEVER invoke `bin/console cache:clear` via Bash, at any point.
 
 ## 11. Playwright Acceptance (mandatory)
 
 **Goal:** Live end-to-end run proves the feature works. Refuse "done" without green pass.
 
-**Pre-req:** Dev server up. Project context tells AI URL (default `http://localhost:8000`). Mate profiler MCP available for email assertion via Symfony profiler.
+**Pre-req:** Dev server up. Project context tells AI URL (default `http://localhost:8000`). Mate Symfony profiler tools available for email assertion via Symfony profiler.
 
 **Authoring rule:** Write a repeatable spec file at `tests/Playwright/<feature>.spec.ts` (or the project's configured Playwright spec location). Do NOT run the steps as one-shot exploratory tool calls. Then execute the spec via Playwright MCP. Spec must be committable, re-runnable, deterministic.
 
@@ -434,7 +434,7 @@ If MCP tool available, call it once. Otherwise skip and assume project setup. NE
 5. `browser_click` → submit.
 6. `browser_snapshot` → assert success flash / state change.
 7. Trigger the downstream condition via an ORM-aware path: a CLI command, admin UI flow via Playwright, or API call. NEVER raw SQL (`doctrine:query:sql "UPDATE ..."`) - R-PLAYWRIGHT-NO-RAW-SQL: bypasses UoW → Doctrine listener never fires → handler never runs → mailer assertion fails.
-8. Mate profiler MCP → `profiler_list_requests` filtered by URL / method / recency → pick latest matching token. Sync Messenger transport in dev ⇒ handler ran in same request ⇒ same token covers email dispatch.
+8. Mate Symfony profiler tools → `symfony-profiler-list` filtered by URL / method / recency → pick latest matching token. Sync Messenger transport in dev ⇒ handler ran in same request ⇒ same token covers email dispatch.
 9. **Email proof (R-EMAIL-PROOF).** Assert via inspectable target - NOT a DB column written by the handler:
    - **Mailpit/mailhog capture transport** (preferred): scrape `http://localhost:8025/api/v1/messages` for matching subject + recipient + locale-correct body.
    - **Profiler mailer collector**: `profiler_request_detail(token).mailer`. Works ONLY when the triggering mutation happened via HTTP (admin form / API) - a CLI-triggered mutation bypasses profiler.
