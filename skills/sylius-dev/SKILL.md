@@ -27,6 +27,7 @@ The `sylius_*` tools below are Mate CLI tools — invoke each as `vendor/bin/mat
 - `sylius_twig_list_functions` - verify any `sylius_*` Twig function before use.
 - **Mailer code check.** Read `sylius_mailer.emails.*` keys from `config/packages/_sylius_mailer.yaml` to confirm existing mailer code shape. No dedicated Mate list tool; `sylius_mailer_verify_template` confirms the final code+template pair in the verify pass.
 - `sylius_domain_list_grids` - mirror existing grid for admin CRUD.
+- `symfony-services` / `symfony-service-detail` (Symfony Mate bridge, shipped with the pack) - container lookups: `--query=<fragment>` matches id or class, `--id=<exact id>` returns `class`, `tags`, `calls`, `constructor`. Never `bin/console debug:container`.
 
 Before declaring DONE, you MUST execute this verify script. Every command output empty/passing. Any failure → STOP, fix, re-run. Do not report task complete with non-empty error output.
 
@@ -40,15 +41,21 @@ bin/console lint:yaml config/ --parse-tags
 # 3. Twig lint - every touched template + email dir
 bin/console lint:twig templates/
 
-# 4. Container - services resolve, no ambiguous bindings
-bin/console debug:container app.repository.<alias>
-bin/console debug:container app.factory.<alias>
-# MANDATORY: run for EVERY class added or modified.
-# Output must show concrete services, NOT "no matching" or "multiple".
+# 4. Container - services resolve, no ambiguous bindings.
+# Never `bin/console debug:container` - the Symfony Mate bridge tools read the
+# same compiled container. Compile gate first: `sylius_cache_clear` drops the
+# stale container, the next kernel-booting sylius_* tool recompiles it, and an
+# autowiring failure ("no matching" / "multiple") surfaces there as a tool error.
+vendor/bin/mate tools:call sylius_cache_clear || exit 1
+vendor/bin/mate tools:call sylius_project_profile || exit 1
+vendor/bin/mate tools:call symfony-service-detail --id=app.repository.<alias> || exit 1
+vendor/bin/mate tools:call symfony-service-detail --id=app.factory.<alias> || exit 1
+# MANDATORY: run for EVERY class added or modified. The id is the exact FQCN.
+# "Service ... not found" = not registered; `constructor` must list concrete services.
 # Catches: bare RepositoryInterface, missing aliases, AbstractResourceType form types
 # silently un-registered, autowire=false instanceof traps.
 for fqcn in <every_new_or_modified_FQCN>; do
-    bin/console debug:container --show-arguments "$fqcn" || exit 1
+    vendor/bin/mate tools:call symfony-service-detail --id="$fqcn" --format=json || exit 1
 done
 
 # 5. Schema - mapping consistent
@@ -185,7 +192,7 @@ Details + ✅ replacements in `anti-patterns.md`. Refuse-list:
   - `sylius/b2b-plugin` → customer permissions altered.
 
   Call the Mate tool `sylius_installed_plugins` before listener / inventory checker / price service design.
-- ❌ **R-GLOB-EXCLUDED-DIR-AUTOWIRE.** Manual service def in a dir excluded from `<AppNs>\:` glob without explicit `autowire: true, autoconfigure: true`. `_defaults` inheritance is opaque - explicit beats implicit. See `reference/services.md`. Verify via `bin/console debug:container --show-arguments <FQCN>`.
+- ❌ **R-GLOB-EXCLUDED-DIR-AUTOWIRE.** Manual service def in a dir excluded from `<AppNs>\:` glob without explicit `autowire: true, autoconfigure: true`. `_defaults` inheritance is opaque - explicit beats implicit. See `reference/services.md`. Verify via `symfony-service-detail --id=<FQCN>` - every `constructor` entry resolves.
 - ❌ **R-MULTI-LOCALE.** Single `messages.<one_locale>.yaml` when project has multiple enabled locales. Read `sylius_locale.locales` (or `framework.default_locale` fallback) - emit one translation file per enabled locale. The Mate tool `sylius_project_profile` returns the list as `locales`.
 - ❌ **R-DEFAULT-URI.** Feature that generates URLs from Messenger handlers / CLI / non-HTTP contexts without `framework.router.default_uri` set. Detect via `bin/console debug:config framework.router`; if absent, add to feature yaml or `framework.yaml`. Without it, `url()` in email template renders empty/wrong host.
 
@@ -239,7 +246,7 @@ End-of-workflow live run. Author a **repeatable spec file** at `tests/Playwright
 7. Mate Symfony profiler tools → `symfony-profiler-list` filtered by URL / method / recency → pick latest matching token. Sync Messenger transport in dev ⇒ handler ran in same request ⇒ same token covers email dispatch.
 8. **Email proof (R-EMAIL-PROOF).** Assert email via inspectable target - NOT a DB column:
    - Capture transport (mailpit/mailhog) - scrape `http://localhost:8025/api/v1/messages` for matching subject + recipient + locale-correct body.
-   - OR profiler mailer collector - works ONLY if the triggering mutation happened via HTTP request (admin form / API). A CLI-triggered mutation bypasses profiler.
+   - OR profiler mailer collector: `vendor/bin/mate resources:read symfony-profiler://profile/<token>/mailer` - works ONLY if the triggering mutation happened via HTTP request (admin form / API). A CLI-triggered mutation bypasses profiler.
    - If neither available: print `// TODO: assert email via mailpit/profiler` and report acceptance INCOMPLETE - do not pass on a handler-written DB flag as proof.
 9. **Post-state assertion.** `browser_navigate` back to the feature's page. `browser_snapshot` → assert the widget NO LONGER visible (precondition no longer holds). Catches stale-cache bugs and listener idempotency failures.
 10. Any step fails → fix root cause, re-run from step 0. Do not declare done until full sequence green.

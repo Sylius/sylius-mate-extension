@@ -59,8 +59,8 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
 
 **Verify:**
 
-- `bin/console debug:container app.repository.<alias>`
-- `bin/console debug:container app.factory.<alias>`
+- `symfony-service-detail --id=app.repository.<alias>`
+- `symfony-service-detail --id=app.factory.<alias>`
 - `bin/console debug:router | grep admin_<alias>`
 - `bin/console lint:yaml config/`
 - `sylius_resource_inspect --alias=<alias>`
@@ -113,7 +113,7 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
 **Verify:**
 
 - `php -l` on form file.
-- `bin/console debug:container <AppNs>\Form\Type\<Ns>\<X>Type` - must resolve to `app.form.type.<resource_name>`.
+- `symfony-service-detail --id=<AppNs>\Form\Type\<Ns>\<X>Type` - must be found under the explicit FQCN-keyed def, `constructor` args resolved.
 
 ## 5. Frontend
 
@@ -164,7 +164,7 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
       tags: ['controller.service_arguments']
   ```
 
-  Verify via `bin/console debug:container --show-arguments <FQCN>` - no missing-args.
+  Verify via `symfony-service-detail --id=<FQCN>` - no missing `constructor` args.
 - Inject `FactoryInterface` by service id via Autowire attribute when no custom factory exists: `#[Autowire(service: 'app.factory.<alias>')] private FactoryInterface $factory`. For app resources w/ a custom factory class, inject `<Name>FactoryInterface` instead. Inject repository **Core-package interface** (`Sylius\Component\Core\Repository\ProductRepositoryInterface` etc. for core resources; app-package `<Name>RepositoryInterface` for app resources). Never bare `Sylius\Resource\Doctrine\Persistence\RepositoryInterface` - ambiguous binding, container can't resolve.
 - For **Sylius core repos** (Product, ProductVariant, Channel, Customer, Order, etc.) declare aliases in `config/services.yaml` (R-CORE-REPO-ALIASES):
 
@@ -175,7 +175,7 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
       alias: sylius.repository.channel
   ```
 
-  For **app repos** registered via `sylius_resource`: do NOT declare a manual `<AppNs>\Repository\<X>RepositoryInterface: alias: app.repository.<x>` (R-NO-MANUAL-REPO-ALIAS). Sylius 2.x resource-bundle compiler pass auto-aliases interface FQCN → `app.repository.<alias>`. Manual alias = duplicate; verify via `bin/console debug:container --filter=<X>RepositoryInterface` if unsure.
+  For **app repos** registered via `sylius_resource`: do NOT declare a manual `<AppNs>\Repository\<X>RepositoryInterface: alias: app.repository.<x>` (R-NO-MANUAL-REPO-ALIAS). Sylius 2.x resource-bundle compiler pass auto-aliases interface FQCN → `app.repository.<alias>`. Manual alias = duplicate; verify via `symfony-services --query=<X>RepositoryInterface` if unsure.
 - Inject `ChannelContextInterface`, `LocaleContextInterface`.
 - Persist via `$repository->add($x)`. Never `$em->persist/flush`. Rule extends to handlers, listeners, helpers - no `EntityManagerInterface` injection anywhere in feature code when a Resource exists. `EntityRepository::add()` does persist+flush idempotently for both new and managed entities. Exception: bulk operations where DBAL/QueryBuilder beats per-row flush.
 - Resource-not-found → `throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();` (R-NOT-FOUND-EXCEPTION). Never `\RuntimeException` or other non-HTTP exception (renders HTTP 500 stack trace to shopper).
@@ -184,7 +184,7 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
 **Verify:**
 
 - `bin/console debug:router | grep <route>`
-- `bin/console debug:container --show-arguments <FQCN>` - every constructor arg must resolve to a concrete service. No "no matching" / "multiple" / autowiring failures.
+- `symfony-service-detail --id=<FQCN>` - every `constructor` entry must resolve to a concrete service. A "no matching" / "multiple" autowiring failure surfaces earlier, when a kernel-booting `sylius_*` tool errors out after `sylius_cache_clear`.
 - `sylius_routes_show --name=<route_name>`
 
 ## 7. Listener
@@ -366,13 +366,19 @@ bin/console lint:yaml config/ --parse-tags
 # 4. Twig
 bin/console lint:twig templates/
 
-# 5. Container - services + ambiguous-binding check
+# 5. Container - services + ambiguous-binding check.
+# Never `bin/console debug:container`. Compile gate first: `sylius_cache_clear`
+# drops the stale container, the next kernel-booting sylius_* tool recompiles
+# it, and an autowiring failure ("no matching" / "multiple") surfaces there.
+vendor/bin/mate tools:call sylius_cache_clear || exit 1
+vendor/bin/mate tools:call sylius_project_profile || exit 1
 # MANDATORY: run for EVERY class added or modified (controllers, handlers,
-# listeners, form types, components, factories, services, etc.).
+# listeners, form types, components, factories, services, etc.). Exact FQCN as id;
+# "Service ... not found" = not registered, `constructor` must list concrete services.
 # Form types extending AbstractResourceType MUST appear with the explicit
 # FQCN-keyed service - autowire is off for them.
 for fqcn in <every_new_or_modified_FQCN>; do
-    bin/console debug:container --show-arguments "$fqcn" || exit 1
+    vendor/bin/mate tools:call symfony-service-detail --id="$fqcn" --format=json || exit 1
 done
 
 # 6. Schema
@@ -437,7 +443,7 @@ If the Mate tool is available, call it once. Otherwise skip and assume project s
 8. Mate Symfony profiler tools → `symfony-profiler-list` filtered by URL / method / recency → pick latest matching token. Sync Messenger transport in dev ⇒ handler ran in same request ⇒ same token covers email dispatch.
 9. **Email proof (R-EMAIL-PROOF).** Assert via inspectable target - NOT a DB column written by the handler:
    - **Mailpit/mailhog capture transport** (preferred): scrape `http://localhost:8025/api/v1/messages` for matching subject + recipient + locale-correct body.
-   - **Profiler mailer collector**: `profiler_request_detail(token).mailer`. Works ONLY when the triggering mutation happened via HTTP (admin form / API) - a CLI-triggered mutation bypasses profiler.
+   - **Profiler mailer collector**: `vendor/bin/mate resources:read symfony-profiler://profile/<token>/mailer` (`symfony-profiler-get` does not list collectors; `symfony-profiler://profile/<token>` does). Works ONLY when the triggering mutation happened via HTTP (admin form / API) - a CLI-triggered mutation bypasses profiler.
    - If `MAILER_DSN` is `null://null` and neither inspectable target is available: print `// TODO: assert email via mailpit/profiler` and report acceptance INCOMPLETE. Do NOT pass on a handler-written DB flag check - handler reaches end-of-loop even when `null://null` swallows the message. False positive.
 10. **Post-state assertion.** `browser_navigate` → the feature's page again. `browser_snapshot` → assert widget NO LONGER visible (precondition no longer holds). Catches stale cache + listener idempotency failures.
 11. Any step fails → fix root cause, re-run from step 1. Do not skip with "good enough".

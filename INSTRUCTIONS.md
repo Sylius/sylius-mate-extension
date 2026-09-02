@@ -2,6 +2,8 @@
 
 Mate CLI tools exposing the Sylius runtime domain — mostly read-only, the three mutating ones are flagged below. Invoke via `vendor/bin/mate tools:call <tool> --<param>=<value>` (nested values via `--json`). Call before generating any Sylius code; call again to audit after.
 
+Container and profiler introspection come from the bundled Symfony bridge (`symfony/ai-symfony-mate-extension`): `symfony-services --query=<fragment>` / `symfony-service-detail --id=<exact id>` instead of `bin/console debug:container`, `symfony-profiler-list` plus the `symfony-profiler://profile/{token}/{collector}` resource instead of reading `var/cache/dev/profiler` by hand. Those tools read the dumped container XML, so after `sylius_cache_clear` call any kernel-booting `sylius_*` tool first to recompile it.
+
 ## Tool index
 
 | Tool | Use when |

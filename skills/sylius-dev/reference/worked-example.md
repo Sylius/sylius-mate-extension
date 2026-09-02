@@ -205,7 +205,7 @@ empty/wrong host.
    restock request. Sync Messenger in dev ⇒ handler ran in the same request.
 8. **Email proof (R-EMAIL-PROOF).** Scrape `http://localhost:8025/api/v1/messages`
    (mailpit) for the matching subject + recipient + locale-correct body, OR
-   read the profiler mailer collector for that token. **Not** a
+   read `symfony-profiler://profile/<token>/mailer` for that token. **Not** a
    `notifiedAt IS NOT NULL` check - the handler reaches end-of-loop even when
    `MAILER_DSN=null://null` swallows the message silently.
 9. **Post-state.** `browser_navigate` back to the product page. `browser_snapshot`

@@ -1145,7 +1145,7 @@ expect(match).toBeDefined();
 Or via the Mate Symfony profiler tools when the trigger is HTTP-driven:
 
 ```
-profiler_request_detail(token).mailer → assert message present
+vendor/bin/mate resources:read symfony-profiler://profile/<token>/mailer → assert message present
 ```
 
 If neither inspectable target available, print `// TODO: assert email via mailpit/profiler` - do not green-light the spec on a DB check.
@@ -1403,7 +1403,7 @@ sylius_resource:
                 repository: <AppNs>\Repository\<Name>Repository
 ```
 
-✅ Right: drop the alias entirely. Sylius 2.x resource-bundle compiler pass auto-aliases interface FQCN → `app.repository.<alias>`. Verify via `bin/console debug:container --filter=<Name>RepositoryInterface`.
+✅ Right: drop the alias entirely. Sylius 2.x resource-bundle compiler pass auto-aliases interface FQCN → `app.repository.<alias>`. Verify via `symfony-services --query=<Name>RepositoryInterface`.
 
 **Why:** Duplicate. Sylius core repos (Product, Channel, etc.) DO need manual aliases (R-CORE-REPO-ALIASES) because they aren't auto-aliased to interface FQCNs - different concern, keep those.
 
@@ -1603,7 +1603,7 @@ Sibling controllers in `services.yaml` set `autowire: false`. This controller in
     tags: ['controller.service_arguments']
 ```
 
-**Why:** `_defaults` inheritance is opaque when neighboring defs override. Always explicit on manual defs in excluded dirs. `bin/console debug:container --show-arguments <FQCN>` is the catch.
+**Why:** `_defaults` inheritance is opaque when neighboring defs override. Always explicit on manual defs in excluded dirs. `symfony-service-detail --id=<FQCN>` is the catch - every `constructor` entry must resolve.
 
 ## 53. Single translation file in multi-locale project
 

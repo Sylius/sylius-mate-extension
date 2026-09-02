@@ -7,7 +7,8 @@
     "require": {
         "php": ">=8.2",
         "composer/semver": "^3.4",
-        "symfony/ai-mate": "^0.13"
+        "symfony/ai-mate": "^0.13",
+        "symfony/ai-symfony-mate-extension": "^0.13"
     },
     "require-dev": {
         "helgesverre/toon": "^3.1",
