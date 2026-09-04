@@ -46,21 +46,19 @@ The skill ships with the extension, so the `sylius_*` tools are present whenever
 
 ## Hard Rules (cross-cutting, refuse if violated)
 
-These apply to every step. Each domain skill carries its own refuse-list on top. Details + ✅ replacements in `anti-patterns.md`.
+These apply to every step; each domain skill carries its own refuse-list on top. Rationale and ✅ replacements in `anti-patterns.md`.
 
-- ❌ Concrete `App\Entity\...` type-hint on entity getter/setter or service signature.
-- ❌ For Sylius core entities (product, product_variant, channel, customer, order, taxon, shipment, payment, address): injecting bare `Sylius\Resource\Doctrine\Persistence\RepositoryInterface`. Always inject the Core-package interface: `Sylius\Component\Core\Repository\ProductRepositoryInterface`, `…\ChannelRepositoryInterface`, etc. Bare interface = ambiguous binding, runtime resolve fail or wrong service.
-- ❌ **Channel repo wrong import.** `Sylius\Component\Core\Repository\ChannelRepositoryInterface` **does not exist**. Always use `Sylius\Component\Channel\Repository\ChannelRepositoryInterface`. Wrong import = container compile error.
-- ❌ **R-EXCLUDE-EXPLICIT-DIRS.** Writing an explicit service def in a directory NOT on the `<AppNs>\:` glob `exclude` list. Autoregister silently clobbers the explicit def - `arguments` dropped, `tags` dropped. `debug:container` may still show the class (tag from autoconfigure) but wired wrong. Append the dir to `exclude:` in the same write. See `reference/services.md` for the standard exclude block.
-- ❌ **R-IMPORTS-SERVICES-DIR violation.** Explicit service defs inlined into `config/services.yaml`. Use `imports: { resource: 'services/' }` + per-feature file under `config/services/app_<feature>.yaml`. `services.yaml` stays stable; feature files isolated.
-- ❌ **R-EM-SCOPE.** `EntityManagerInterface` injection in any feature service (controller, handler, listener, helper) when a Resource exists. Use `RepositoryInterface::add($x)` - Sylius `EntityRepository::add()` does persist+flush idempotently for both new and existing managed entities. Exception: bulk operations where DBAL/QueryBuilder beats per-row flush.
-- ❌ **R-CACHE-CLEAR.** `bin/console cache:clear` (or `fos:elastica:populate`) run from the shell, at any point. Cache clearing goes through the Mate tool `sylius_cache_clear` only - see Cache Clear.
-- ❌ **R-REPO-NAMESPACE violation.** Sub-namespacing classes that are pinned FLAT:
-  - Sub-namespace OK: `App\Entity\<Feature>\<X>`, `App\Form\Type\<Feature>\<X>Type`.
-  - FLAT only: `App\Repository\<X>Repository`, `App\Factory\<X>Factory`, `App\EventListener\<X>Listener`, `App\Message\<X>`, `App\MessageHandler\<X>Handler`.
-- ❌ **R-NAMESPACE-FROM-COMPOSER.** Hardcoding `App\` in any scaffold. Always read `composer.json` `autoload.psr-4` → derive app root namespace (`App\\`, `Elesto\\`, `Acme\\Shop\\`, etc.). Use first PSR-4 entry pointing at `src/`. Parameterize every scaffold input on it. The Mate tool `sylius_project_profile` returns it as `app_namespace`.
-- ❌ **R-PLUGIN-AWARENESS.** Designing inventory / pricing / order / availability / channel logic without first checking what is installed (`sylius_installed_plugins`) and which `sylius.*` service is already decorated (`sylius_service_decorators`). A decorator on the service you are about to hook means the data may live elsewhere - e.g. under `sylius/multi-source-inventory-plugin` stock lives in `InventorySourceStockInterface` rows, not `ProductVariant.onHand`, so a listener watching `onHand` is dead. Read the decorator class when unsure.
-- ❌ **R-GLOB-EXCLUDED-DIR-AUTOWIRE.** Manual service def in a dir excluded from `<AppNs>\:` glob without explicit `autowire: true, autoconfigure: true`. `_defaults` inheritance is opaque - explicit beats implicit. See `reference/services.md`. Verify via `symfony-service-detail --id=<FQCN>` - every `constructor` entry resolves.
+- ❌ Concrete `App\Entity\...` type-hint on entity getter/setter or service signature → Sylius `*Interface`.
+- ❌ Bare `Sylius\Resource\Doctrine\Persistence\RepositoryInterface` injected for a Sylius core entity → the Core-package interface (`Sylius\Component\Core\Repository\ProductRepositoryInterface`, …); bare = ambiguous binding.
+- ❌ **Channel repo wrong import.** `Sylius\Component\Core\Repository\ChannelRepositoryInterface` does not exist → `Sylius\Component\Channel\Repository\ChannelRepositoryInterface`.
+- ❌ **R-EXCLUDE-EXPLICIT-DIRS.** Explicit service def in a directory not on the `<AppNs>\:` glob `exclude` list → autoregister silently clobbers it; append the dir to `exclude:` in the same write.
+- ❌ **R-IMPORTS-SERVICES-DIR.** Explicit service defs inlined into `config/services.yaml` → `imports: { resource: 'services/' }` + `config/services/app_<feature>.yaml`.
+- ❌ **R-EM-SCOPE.** `EntityManagerInterface` in any feature service when a Resource exists → `RepositoryInterface::add($x)` (persist + flush, idempotent); bulk DBAL work is the only exception.
+- ❌ **R-CACHE-CLEAR.** `bin/console cache:clear` or `fos:elastica:populate` from the shell → Mate tool `sylius_cache_clear`; Elasticsearch: tell the user.
+- ❌ **R-REPO-NAMESPACE.** Sub-namespacing classes pinned flat (`Repository`, `Factory`, `EventListener`, `Message`, `MessageHandler`) → flat; only `Entity\<Feature>\` and `Form\Type\<Feature>\` nest.
+- ❌ **R-NAMESPACE-FROM-COMPOSER.** Hardcoded `App\` in any scaffold → `app_namespace` from `sylius_project_profile` (composer `autoload.psr-4`).
+- ❌ **R-PLUGIN-AWARENESS.** Inventory / pricing / order / availability / channel logic designed without `sylius_installed_plugins` + `sylius_service_decorators` → check first; a decorator on the target service means the data may live elsewhere (MSI: stock in `InventorySourceStockInterface`, not `ProductVariant.onHand`).
+- ❌ **R-GLOB-EXCLUDED-DIR-AUTOWIRE.** Manual service def in a glob-excluded dir without explicit `autowire: true, autoconfigure: true` → always explicit; verify with `symfony-service-detail --id=<FQCN>`.
 
 ## Core Repo Aliases (R-CORE-REPO-ALIASES)
 
