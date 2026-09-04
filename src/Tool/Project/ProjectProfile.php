@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Project;
 
+use Sylius\MateExtension\Kernel\ComposerPackageResolver;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
@@ -22,7 +23,7 @@ final class ProjectProfile
      */
     #[MateTool(
         name: 'sylius_project_profile',
-        description: 'Auto-detect the host project shape: app namespace (from composer.json psr-4), src/config/translations dirs, enabled locales, default locale, default channel, MAILER_DSN observability, messenger transport mode, services.yaml App\\ glob exclude entries, hook config dir convention. Every other scaffold tool should consume this profile to stop hardcoding App\\, messages.en_US.yaml, single-locale assumptions.',
+        description: 'Auto-detect the host project shape: app namespace (from composer.json psr-4), src/config/translations dirs, enabled locales, default locale, default channel, MAILER_DSN observability, messenger transport mode, services.yaml App\\ glob exclude entries, hook config dir convention, symfony_mate_bridge (whether symfony/ai-symfony-mate-extension is installed — decides between symfony-service-detail and bin/console debug:container for container lookups). Every other scaffold tool should consume this profile to stop hardcoding App\\, messages.en_US.yaml, single-locale assumptions.',
     )]
     public function __invoke(): array
     {
@@ -63,6 +64,7 @@ final class ProjectProfile
         $excludes = $this->detectAppGlobExcludes($projectDir, $appNamespace);
         $controllersShopExcluded = $this->controllerShopExcluded($excludes);
         $hookConvention = $this->detectHookConvention($projectDir);
+        $symfonyMateBridge = $this->detectSymfonyMateBridge($projectDir);
 
         $item = [
             'app_namespace' => $appNamespace,
@@ -80,6 +82,7 @@ final class ProjectProfile
             'services_yaml_app_glob_exclude' => $excludes,
             'controllers_shop_glob_excluded' => $controllersShopExcluded,
             'hook_config_dir_convention' => $hookConvention,
+            'symfony_mate_bridge' => $symfonyMateBridge,
             'project_dir' => $projectDir,
         ];
 
@@ -301,6 +304,20 @@ final class ProjectProfile
         }
 
         return false;
+    }
+
+    /**
+     * The Symfony Mate bridge is not a dependency of this extension — the
+     * sylius/sylius-ai-dev-tools pack pins it. Vendor dir first (what is
+     * actually installed), composer.lock as fallback.
+     */
+    private function detectSymfonyMateBridge(string $projectDir): bool
+    {
+        if (is_dir($projectDir . '/vendor/symfony/ai-symfony-mate-extension')) {
+            return true;
+        }
+
+        return isset(ComposerPackageResolver::readLock($projectDir)['symfony/ai-symfony-mate-extension']);
     }
 
     private function detectHookConvention(string $projectDir): string

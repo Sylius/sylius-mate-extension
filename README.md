@@ -60,7 +60,7 @@ Tools are grouped by domain. Full reference in [INSTRUCTIONS.md](INSTRUCTIONS.md
 - **Admin / Playwright** — `sylius_admin_restock_via_http`, `sylius_playwright_recipe`
 - **Cache** — `sylius_cache_clear`
 
-Generic Symfony introspection is not duplicated here. The `sylius/sylius-ai-dev-tools` pack installs this extension together with [`symfony/ai-symfony-mate-extension`](https://github.com/symfony/ai-symfony-mate-extension), whose `symfony-services` / `symfony-service-detail` tools and `symfony-profiler-*` tools and resources cover container lookups and profiler access; the `sylius-dev` skill delegates to them instead of shelling out to `bin/console debug:container`.
+Generic Symfony introspection is not duplicated here. Container lookups and profiler access come from [`symfony/ai-symfony-mate-extension`](https://github.com/symfony/ai-symfony-mate-extension) (`symfony-services` / `symfony-service-detail`, `symfony-profiler-*` tools and resources). That bridge is **optional** for this extension — the `sylius/sylius-ai-dev-tools` pack installs both — and `sylius_project_profile` reports whether it is present as `symfony_mate_bridge`. The `sylius-dev` skill uses the bridge when it is there and falls back to `bin/console debug:container` when it is not.
 
 ## Development
 

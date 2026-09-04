@@ -45,6 +45,30 @@ final class ProjectProfileTest extends TestCase
         self::assertSame('Elesto\\', $result['items'][0]['app_namespace_with_separator']);
         self::assertSame(['en', 'pl'], $result['items'][0]['enabled_locales']);
         self::assertFalse($result['items'][0]['mailer_dsn_observable']);
+        self::assertFalse($result['items'][0]['symfony_mate_bridge']);
+    }
+
+    public function testDetectsSymfonyMateBridgeFromVendorDir(): void
+    {
+        mkdir($this->sandbox . '/vendor/symfony/ai-symfony-mate-extension', 0777, true);
+        $tool = new ProjectProfile($this->host(['kernel.project_dir' => $this->sandbox]));
+
+        $result = ($tool)();
+
+        self::assertTrue($result['items'][0]['symfony_mate_bridge']);
+    }
+
+    public function testDetectsSymfonyMateBridgeFromComposerLock(): void
+    {
+        file_put_contents($this->sandbox . '/composer.lock', json_encode([
+            'packages' => [],
+            'packages-dev' => [['name' => 'symfony/ai-symfony-mate-extension', 'version' => 'v0.13.0', 'type' => 'symfony-ai-mate']],
+        ]));
+        $tool = new ProjectProfile($this->host(['kernel.project_dir' => $this->sandbox]));
+
+        $result = ($tool)();
+
+        self::assertTrue($result['items'][0]['symfony_mate_bridge']);
     }
 
     /**

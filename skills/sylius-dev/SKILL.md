@@ -19,7 +19,7 @@ You are building a feature in a Sylius 2.x project. Follow this brief. Never ski
 
 The `sylius_*` tools below are Mate CLI tools — invoke each as `vendor/bin/mate tools:call <tool> --<param>=<value>` (nested values via `--json`). Before writing ANY file, you MUST complete this discovery checklist (Mate tool calls where one exists):
 
-- `sylius_project_profile` - **first call, always.** Returns `app_namespace` (PSR-4 root, never hardcode `App\`), `locales` (enabled list for translation file emission), and feature flags. R-NAMESPACE-FROM-COMPOSER + R-MULTI-LOCALE depend on this.
+- `sylius_project_profile` - **first call, always.** Returns `app_namespace` (PSR-4 root, never hardcode `App\`), `locales` (enabled list for translation file emission), `symfony_mate_bridge` (see container lookups below), and feature flags. R-NAMESPACE-FROM-COMPOSER + R-MULTI-LOCALE depend on this.
 - `sylius_installed_plugins` - inventory installed Sylius plugins (MSI, wishlist, refund, multi-currency, b2b) before designing any listener / inventory checker / price service / channel resolver. R-PLUGIN-AWARENESS.
 - `sylius_domain_list_resources` - does target resource exist? Learn shape.
 - `sylius_hooks_find_for_template` - for UI placement.
@@ -27,7 +27,7 @@ The `sylius_*` tools below are Mate CLI tools — invoke each as `vendor/bin/mat
 - `sylius_twig_list_functions` - verify any `sylius_*` Twig function before use.
 - **Mailer code check.** Read `sylius_mailer.emails.*` keys from `config/packages/_sylius_mailer.yaml` to confirm existing mailer code shape. No dedicated Mate list tool; `sylius_mailer_verify_template` confirms the final code+template pair in the verify pass.
 - `sylius_domain_list_grids` - mirror existing grid for admin CRUD.
-- `symfony-services` / `symfony-service-detail` (Symfony Mate bridge, shipped with the pack) - container lookups: `--query=<fragment>` matches id or class, `--id=<exact id>` returns `class`, `tags`, `calls`, `constructor`. Never `bin/console debug:container`.
+- **Container lookups** - the Symfony Mate bridge (`symfony/ai-symfony-mate-extension`) is optional for this extension; the `sylius/sylius-ai-dev-tools` pack installs it, `sylius_project_profile.symfony_mate_bridge` tells you. With the bridge: `symfony-services --query=<fragment>` (matches id or class), `symfony-service-detail --id=<exact id>` (returns `class`, `tags`, `calls`, `constructor`) - and then never `bin/console debug:container`. Without it: `bin/console debug:container <id> --show-arguments` / `--filter=<fragment>`. Every `symfony-service-detail` mention in this skill means "the container lookup for your setup".
 
 Before declaring DONE, you MUST execute this verify script. Every command output empty/passing. Any failure → STOP, fix, re-run. Do not report task complete with non-empty error output.
 
@@ -42,20 +42,27 @@ bin/console lint:yaml config/ --parse-tags
 bin/console lint:twig templates/
 
 # 4. Container - services resolve, no ambiguous bindings.
-# Never `bin/console debug:container` - the Symfony Mate bridge tools read the
-# same compiled container. Compile gate first: `sylius_cache_clear` drops the
-# stale container, the next kernel-booting sylius_* tool recompiles it, and an
-# autowiring failure ("no matching" / "multiple") surfaces there as a tool error.
+# Compile gate first: `sylius_cache_clear` drops the stale container, the next
+# kernel-booting sylius_* tool recompiles it, and an autowiring failure
+# ("no matching" / "multiple") surfaces there as a tool error. The bridge reads
+# that compiled dump; `symfony_mate_bridge` in the profile output picks the lookup.
 vendor/bin/mate tools:call sylius_cache_clear || exit 1
 vendor/bin/mate tools:call sylius_project_profile || exit 1
-vendor/bin/mate tools:call symfony-service-detail --id=app.repository.<alias> || exit 1
-vendor/bin/mate tools:call symfony-service-detail --id=app.factory.<alias> || exit 1
+service_detail() {   # bridge when installed, bin/console otherwise
+    if [ -d vendor/symfony/ai-symfony-mate-extension ]; then
+        vendor/bin/mate tools:call symfony-service-detail --id="$1" --format=json
+    else
+        bin/console debug:container "$1" --show-arguments
+    fi
+}
+service_detail app.repository.<alias> || exit 1
+service_detail app.factory.<alias> || exit 1
 # MANDATORY: run for EVERY class added or modified. The id is the exact FQCN.
 # "Service ... not found" = not registered; `constructor` must list concrete services.
 # Catches: bare RepositoryInterface, missing aliases, AbstractResourceType form types
 # silently un-registered, autowire=false instanceof traps.
 for fqcn in <every_new_or_modified_FQCN>; do
-    vendor/bin/mate tools:call symfony-service-detail --id="$fqcn" --format=json || exit 1
+    service_detail "$fqcn" || exit 1
 done
 
 # 5. Schema - mapping consistent
@@ -243,10 +250,10 @@ End-of-workflow live run. Author a **repeatable spec file** at `tests/Playwright
 4. `browser_type` / `browser_fill_form` → fill required inputs (e.g. email).
 5. `browser_click` → submit. `browser_snapshot` → assert success flash / state change.
 6. Trigger the downstream condition through ORM (CLI command, admin UI flow, or API call). NEVER raw SQL (`doctrine:query:sql "UPDATE ..."`) - R-PLAYWRIGHT-NO-RAW-SQL: bypasses UoW → Doctrine listener never fires → handler never runs → assertion fails.
-7. Mate Symfony profiler tools → `symfony-profiler-list` filtered by URL / method / recency → pick latest matching token. Sync Messenger transport in dev ⇒ handler ran in same request ⇒ same token covers email dispatch.
+7. Profiler token (bridge installed) → `symfony-profiler-list` filtered by URL / method / recency → pick latest matching token; without the bridge read the latest token from `var/cache/dev/profiler/index.csv`. Sync Messenger transport in dev ⇒ handler ran in same request ⇒ same token covers email dispatch.
 8. **Email proof (R-EMAIL-PROOF).** Assert email via inspectable target - NOT a DB column:
    - Capture transport (mailpit/mailhog) - scrape `http://localhost:8025/api/v1/messages` for matching subject + recipient + locale-correct body.
-   - OR profiler mailer collector: `vendor/bin/mate resources:read symfony-profiler://profile/<token>/mailer` - works ONLY if the triggering mutation happened via HTTP request (admin form / API). A CLI-triggered mutation bypasses profiler.
+   - OR profiler mailer collector: `vendor/bin/mate resources:read symfony-profiler://profile/<token>/mailer` (bridge) or `/_profiler/<token>?panel=mailer` over HTTP - works ONLY if the triggering mutation happened via HTTP request (admin form / API). A CLI-triggered mutation bypasses profiler.
    - If neither available: print `// TODO: assert email via mailpit/profiler` and report acceptance INCOMPLETE - do not pass on a handler-written DB flag as proof.
 9. **Post-state assertion.** `browser_navigate` back to the feature's page. `browser_snapshot` → assert the widget NO LONGER visible (precondition no longer holds). Catches stale-cache bugs and listener idempotency failures.
 10. Any step fails → fix root cause, re-run from step 0. Do not declare done until full sequence green.

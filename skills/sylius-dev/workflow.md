@@ -59,7 +59,7 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
 
 **Verify:**
 
-- `symfony-service-detail --id=app.repository.<alias>`
+- `symfony-service-detail --id=app.repository.<alias>` (no bridge: `bin/console debug:container app.repository.<alias>`)
 - `symfony-service-detail --id=app.factory.<alias>`
 - `bin/console debug:router | grep admin_<alias>`
 - `bin/console lint:yaml config/`
@@ -367,18 +367,26 @@ bin/console lint:yaml config/ --parse-tags
 bin/console lint:twig templates/
 
 # 5. Container - services + ambiguous-binding check.
-# Never `bin/console debug:container`. Compile gate first: `sylius_cache_clear`
-# drops the stale container, the next kernel-booting sylius_* tool recompiles
-# it, and an autowiring failure ("no matching" / "multiple") surfaces there.
+# Compile gate first: `sylius_cache_clear` drops the stale container, the next
+# kernel-booting sylius_* tool recompiles it, and an autowiring failure
+# ("no matching" / "multiple") surfaces there. Lookup = Symfony Mate bridge when
+# installed (pack), `bin/console debug:container` otherwise - see SKILL.md.
 vendor/bin/mate tools:call sylius_cache_clear || exit 1
 vendor/bin/mate tools:call sylius_project_profile || exit 1
+service_detail() {
+    if [ -d vendor/symfony/ai-symfony-mate-extension ]; then
+        vendor/bin/mate tools:call symfony-service-detail --id="$1" --format=json
+    else
+        bin/console debug:container "$1" --show-arguments
+    fi
+}
 # MANDATORY: run for EVERY class added or modified (controllers, handlers,
 # listeners, form types, components, factories, services, etc.). Exact FQCN as id;
 # "Service ... not found" = not registered, `constructor` must list concrete services.
 # Form types extending AbstractResourceType MUST appear with the explicit
 # FQCN-keyed service - autowire is off for them.
 for fqcn in <every_new_or_modified_FQCN>; do
-    vendor/bin/mate tools:call symfony-service-detail --id="$fqcn" --format=json || exit 1
+    service_detail "$fqcn" || exit 1
 done
 
 # 6. Schema
@@ -440,10 +448,10 @@ If the Mate tool is available, call it once. Otherwise skip and assume project s
 5. `browser_click` → submit.
 6. `browser_snapshot` → assert success flash / state change.
 7. Trigger the downstream condition via an ORM-aware path: a CLI command, admin UI flow via Playwright, or API call. NEVER raw SQL (`doctrine:query:sql "UPDATE ..."`) - R-PLAYWRIGHT-NO-RAW-SQL: bypasses UoW → Doctrine listener never fires → handler never runs → mailer assertion fails.
-8. Mate Symfony profiler tools → `symfony-profiler-list` filtered by URL / method / recency → pick latest matching token. Sync Messenger transport in dev ⇒ handler ran in same request ⇒ same token covers email dispatch.
+8. Profiler token (bridge installed) → `symfony-profiler-list` filtered by URL / method / recency → pick latest matching token; without the bridge read the latest token from `var/cache/dev/profiler/index.csv`. Sync Messenger transport in dev ⇒ handler ran in same request ⇒ same token covers email dispatch.
 9. **Email proof (R-EMAIL-PROOF).** Assert via inspectable target - NOT a DB column written by the handler:
    - **Mailpit/mailhog capture transport** (preferred): scrape `http://localhost:8025/api/v1/messages` for matching subject + recipient + locale-correct body.
-   - **Profiler mailer collector**: `vendor/bin/mate resources:read symfony-profiler://profile/<token>/mailer` (`symfony-profiler-get` does not list collectors; `symfony-profiler://profile/<token>` does). Works ONLY when the triggering mutation happened via HTTP (admin form / API) - a CLI-triggered mutation bypasses profiler.
+   - **Profiler mailer collector**: `vendor/bin/mate resources:read symfony-profiler://profile/<token>/mailer` (`symfony-profiler-get` does not list collectors; `symfony-profiler://profile/<token>` does), or `/_profiler/<token>?panel=mailer` over HTTP without the bridge. Works ONLY when the triggering mutation happened via HTTP (admin form / API) - a CLI-triggered mutation bypasses profiler.
    - If `MAILER_DSN` is `null://null` and neither inspectable target is available: print `// TODO: assert email via mailpit/profiler` and report acceptance INCOMPLETE. Do NOT pass on a handler-written DB flag check - handler reaches end-of-loop even when `null://null` swallows the message. False positive.
 10. **Post-state assertion.** `browser_navigate` → the feature's page again. `browser_snapshot` → assert widget NO LONGER visible (precondition no longer holds). Catches stale cache + listener idempotency failures.
 11. Any step fails → fix root cause, re-run from step 1. Do not skip with "good enough".
