@@ -1,7 +1,7 @@
 # Worked Example - Back-in-Stock Notifications
 
-The rest of this skill (`SKILL.md`, `workflow.md`, `anti-patterns.md`,
-other `reference/*.md`) is written generically - placeholders like
+The rest of the skill family (`sylius-dev`, `sylius-resource`, `sylius-frontend`,
+`sylius-events`, `sylius-mailer`, `sylius-verify`) is written generically - placeholders like
 `<Name>`, `<X>`, `<alias>`, `<TriggerField>` stand for whatever feature
 you're actually building. This file is the one place that stays fully
 concrete: a real feature, built start to finish, so every abstract rule
@@ -14,7 +14,7 @@ Doctrine-detected state transition, an async email, a hook that has to
 disappear once the precondition changes, and a Playwright acceptance gate
 that has to prove all of that end to end.
 
-Rule IDs are tagged in parens - cross-reference `anti-patterns.md` for the
+Rule IDs are tagged in parens - cross-reference each skill's `anti-patterns.md` for the
 ❌/✅ pair and "Why".
 
 ## 1. Resource

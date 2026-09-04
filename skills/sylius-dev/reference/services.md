@@ -110,4 +110,4 @@ Verify via `symfony-service-detail --id=<FQCN>` - no missing-args runtime failur
 
 ## Doctrine listener registration
 
-See `reference/events.md` for the canonical attribute-only pattern + the forbidden hybrid (attribute + yaml tag) that fires the listener twice per event.
+See `sylius-events/reference.md` for the canonical attribute-only pattern + the forbidden hybrid (attribute + yaml tag) that fires the listener twice per event.

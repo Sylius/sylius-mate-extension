@@ -62,6 +62,21 @@ Tools are grouped by domain. Full reference in [INSTRUCTIONS.md](INSTRUCTIONS.md
 
 Generic Symfony introspection is not duplicated here. Container lookups and profiler access come from [`symfony/ai-symfony-mate-extension`](https://github.com/symfony/ai-symfony-mate-extension) (`symfony-services` / `symfony-service-detail`, `symfony-profiler-*` tools and resources). That bridge is **optional** for this extension — the `sylius/sylius-ai-dev-tools` pack installs both — and `sylius_project_profile` reports whether it is present as `symfony_mate_bridge`. The `sylius-dev` skill uses the bridge when it is there and falls back to `bin/console debug:container` when it is not.
 
+## Skills
+
+The extension also ships agent skills (installed into `.agents/skills/` by `vendor/bin/mate discover`). They are the control plane for the tools above: when and why to apply a Sylius idiom, and what to refuse.
+
+| Skill | Scope |
+|---|---|
+| `sylius-dev` | entry point: mental model, Mate discovery protocol, cross-cutting rules, the build map |
+| `sylius-resource` | entity, repository, form type, `sylius_resource` yaml, admin grid + route, migration, fixture, controller |
+| `sylius-frontend` | Twig hooks, hook templates, Twig components |
+| `sylius-events` | Sylius events, Doctrine `onFlush`/`postFlush` listeners, Messenger handlers |
+| `sylius-mailer` | `sylius_mailer` config, email templates, send context, translations and locales |
+| `sylius-verify` | verify pass, cache clear, Playwright acceptance - the definition of done |
+
+A whole feature walks all six in order; a narrow task loads `sylius-dev` plus the one skill it needs.
+
 ## Development
 
 ```bash
