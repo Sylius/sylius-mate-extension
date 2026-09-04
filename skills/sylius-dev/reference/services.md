@@ -65,7 +65,7 @@ services:
 
 Old `app.form.type.<x>` id + FQCN alias dual pattern is dropped - one trap door fewer.
 
-Verify: `bin/console debug:container --show-arguments App\Form\Type\<Feature>\<X>Type` - every constructor arg resolves.
+Verify: `symfony-service-detail --id=App\Form\Type\<Feature>\<X>Type` - every `constructor` entry resolves.
 
 ## Core Sylius repository aliases (R-CORE-REPO-ALIASES)
 
@@ -106,8 +106,8 @@ App\Controller\Shop\<X>Controller:
     tags: ['controller.service_arguments']
 ```
 
-Verify via `bin/console debug:container --show-arguments <FQCN>` - no missing-args runtime failure.
+Verify via `symfony-service-detail --id=<FQCN>` - no missing-args runtime failure.
 
 ## Doctrine listener registration
 
-See `reference/events.md` for the canonical attribute-only pattern + the forbidden hybrid (attribute + yaml tag) that fires the listener twice per event.
+See `sylius-events/reference.md` for the canonical attribute-only pattern + the forbidden hybrid (attribute + yaml tag) that fires the listener twice per event.
