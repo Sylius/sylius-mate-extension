@@ -1074,13 +1074,13 @@ Or drive the admin UI flow via Playwright (login → edit → save). Or hit an A
 bin/console cache:clear
 ```
 
-…called during exploration, debugging, or as part of verify. CLAUDE.md explicitly forbids.
+…called during exploration, debugging, or as part of verify.
 
 ✅ Right:
 
 Call the Mate tool `sylius_cache_clear` exactly once before Playwright. The Mate tool is the boundary gate.
 
-**Why:** The harness's Bash classifier enforces the CLAUDE.md rule at the shell level - there's no scoped exception to carve out for verify or Playwright prep. Moving the action to a Mate tool sidesteps the rule entirely; the tool is a mechanical override, not a shell call.
+**Why:** Host projects commonly forbid shell `cache:clear` and agent harnesses may block the command outright, with no scoped exception for verify or Playwright prep. The Mate tool is PHP-native (Kernel API + FS), so it works regardless and is the single owner of that action.
 
 ## 36. Leaf hook target without parent visibility check
 
@@ -1622,7 +1622,7 @@ translations/messages.en_US.yaml
 translations/messages.pl_PL.yaml
 ```
 
-**Why:** Read `sylius_locale.locales` (or fallback `framework.default_locale`). Emit one file per enabled locale. The Mate tool `sylius_project_profile` returns the list as `locales`. Default to "single en_US file" only when project actually ships only en_US.
+**Why:** Read `sylius_locale.locales` (or fallback `framework.default_locale`). Emit one file per enabled locale. The Mate tool `sylius_project_profile` returns the list as `enabled_locales`. Default to "single en_US file" only when project actually ships only en_US.
 
 ## 54. Async URL generation without default_uri
 

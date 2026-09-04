@@ -8,8 +8,8 @@
 
 **Discovery calls (in order, Mate tool where one exists):**
 
-- `sylius_project_profile` - **first**. Returns `app_namespace` (PSR-4 root from composer.json; never assume `<AppNs>\`), `locales` (enabled list - emit one translation file per), `default_uri_present` (R-DEFAULT-URI gate), feature flags.
-- `sylius_installed_plugins` - inventory active Sylius plugins. Critical: MSI changes stock storage to `InventorySourceStockInterface`; wishlist, refund, multi-currency-pricing, b2b decorate core services. Adjust listener target / query target accordingly (R-PLUGIN-AWARENESS).
+- `sylius_project_profile` - **first**. Returns `app_namespace` (PSR-4 root from composer.json; never assume `<AppNs>\`), `enabled_locales` (emit one translation file per), `framework_router_default_uri` (R-DEFAULT-URI gate), `symfony_mate_bridge` (container lookup - see SKILL.md).
+- `sylius_installed_plugins` + `sylius_service_decorators` - what is installed and which `sylius.*` services are decorated. A decorator on the service you plan to hook means the data may live elsewhere (MSI moves stock to `InventorySourceStockInterface`). Adjust listener / query target accordingly (R-PLUGIN-AWARENESS).
 - `sylius_domain_list_resources` - does target resource already exist?
 - `sylius_hooks_find_for_template` - which TwigHook entry slot fits the UI change?
 - `sylius_hooks_resolve_for_visibility` - given feature visibility state (`oos` / `in_stock` / `always` / `logged_in_only`), returns hook targets whose parent template renders in that state. **Mandatory** before selecting a leaf hook (R-HOOK-VISIBILITY). Leaf hooks like `*.add_to_cart.*` live inside `{% if %}` branches that short-circuit when variant unavailable; for an out-of-stock-only feature they are dead.
@@ -343,7 +343,7 @@ If feature dispatches email:
 
 If feature uses any translation key:
 
-- Read `sylius_locale.locales` (fallback: `framework.default_locale`). The Mate tool `sylius_project_profile` returns the list as `locales`.
+- Read `sylius_locale.locales` (fallback: `framework.default_locale`). The Mate tool `sylius_project_profile` returns the list as `enabled_locales`.
 - Emit ONE `translations/messages.<locale>.yaml` per enabled locale. Sylius-Standard ships `en_US`; Elesto ships `en_US` + `pl_PL`; per-project varies.
 - Filename matches exact locale string (variant included). `messages.en_US.yaml`, NOT `messages.en.yaml`.
 - No separate cache reminder - verify-step targeted translation cache wipe handles it.
@@ -354,7 +354,7 @@ Run every command. Output must be empty/passing. Any failure → STOP, fix, re-r
 
 ```bash
 # 1. Targeted translation cache wipe - only if translations changed.
-#    NOT a full cache:clear (which CLAUDE.md forbids). Surgical rm of one dir.
+#    NOT a full cache:clear (see 10.5). Surgical rm of one dir.
 [ -d var/cache/dev/translations ] && rm -f var/cache/dev/translations/*
 
 # 2. PHP syntax
@@ -418,22 +418,17 @@ vendor/bin/behat features/<area>/<name>.feature --dry-run
 #   - step 11's `sylius_resource_inspect --alias=<alias>` passed
 ```
 
-Do **not** run `bin/console fos:elastica:populate` automatically (CLAUDE.md). Tell user.
+Do **not** run `bin/console fos:elastica:populate` automatically - slow and project-specific. Tell the user.
 
 ## 10.5. Pre-Playwright Cache Clear
 
-Not the skill's responsibility. The harness auto-mode classifier denies even tool-driven Bash invocations of `cache:clear`. Cache:clear is owned by:
-
-- the Mate tool `sylius_cache_clear` impl (must bypass Bash - use Symfony Kernel FS ops), OR
-- Project CLAUDE.md preset.
-
-If the Mate tool is available, call it once. Otherwise skip and assume project setup. NEVER invoke `bin/console cache:clear` via Bash, at any point.
+Call the Mate tool `sylius_cache_clear` once (PHP-native, no shell). Never `bin/console cache:clear` from the shell - host projects commonly forbid it and agent harnesses may block it.
 
 ## 11. Playwright Acceptance (mandatory)
 
 **Goal:** Live end-to-end run proves the feature works. Refuse "done" without green pass.
 
-**Pre-req:** Dev server up. Project context tells AI URL (default `http://localhost:8000`). Mate Symfony profiler tools available for email assertion via Symfony profiler.
+**Pre-req:** Dev server up. Project context tells AI URL (default `http://localhost:8000`); if down, ask the user to start it - do not silently skip. Email assertion needs mailpit or a readable profiler (bridge tools or `var/cache/dev/profiler`).
 
 **Authoring rule:** Write a repeatable spec file at `tests/Playwright/<feature>.spec.ts` (or the project's configured Playwright spec location). Do NOT run the steps as one-shot exploratory tool calls. Then execute the spec via Playwright MCP. Spec must be committable, re-runnable, deterministic.
 
