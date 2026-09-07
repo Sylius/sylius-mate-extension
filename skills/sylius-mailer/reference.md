@@ -31,7 +31,7 @@ sylius_mailer:
 ```
 
 A filled-in instance (`app_back_in_stock`, with a product-name interpolation)
-is in `reference/worked-example.md`.
+is in `sylius-dev/reference/worked-example.md`.
 
 Rules:
 

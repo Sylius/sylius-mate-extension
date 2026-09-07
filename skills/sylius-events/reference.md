@@ -6,7 +6,7 @@ Decision tree for "react to domain change".
 
 1. **Sylius domain event.** Tagged on the application's domain operation (e.g. `sylius.order.post_complete`, `sylius.product.post_update`). Grep `vendor/sylius/*/src/**/SyliusEvents.php` for existing ones - no Mate tool for this, they're compile-time constants, not kernel state.
 2. **Sylius lifecycle event from `Resource` operations.** Fires before/after factory create, repo add/update/remove.
-3. **Doctrine `onFlush` + UnitOfWork.** Catches all persistence paths (direct updates, internal mutations). Use when no Sylius event covers the trigger - typical for watching a field on an existing resource (stock is the canonical case, see `reference/worked-example.md`).
+3. **Doctrine `onFlush` + UnitOfWork.** Catches all persistence paths (direct updates, internal mutations). Use when no Sylius event covers the trigger - typical for watching a field on an existing resource (stock is the canonical case, see `sylius-dev/reference/worked-example.md`).
 4. **Doctrine `postUpdate` / `postPersist`.** Acceptable for simple field-watch with low side effect risk.
 5. **Doctrine `preUpdate`.** Last resort - runs inside flush, can be skipped if change set empty, risky for side effects.
 
@@ -75,7 +75,7 @@ final class <X>Listener
 ```
 
 A filled-in instance (stock crossing 0, `ProductVariantInterface`, dispatching a
-back-in-stock message) is in `reference/worked-example.md`.
+back-in-stock message) is in `sylius-dev/reference/worked-example.md`.
 
 Do NOT also add `doctrine.event_listener` yaml tags - with `autoconfigure: true`, attribute + yaml tag together fires the listener twice per event.
 

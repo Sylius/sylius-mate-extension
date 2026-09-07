@@ -26,6 +26,9 @@
             "Sylius\\MateExtension\\Tests\\": "tests/"
         }
     },
+    "suggest": {
+        "symfony/ai-symfony-mate-extension": "Container and profiler introspection used by the sylius-dev skill; without it the skill falls back to bin/console. Installed by sylius/sylius-ai-dev-tools."
+    },
     "scripts": {
         "test": "vendor/bin/phpunit",
         "phpstan": "vendor/bin/phpstan analyse"

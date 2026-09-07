@@ -1,7 +1,7 @@
 # Worked Example - Back-in-Stock Notifications
 
-The rest of this skill (`SKILL.md`, `workflow.md`, `anti-patterns.md`,
-other `reference/*.md`) is written generically - placeholders like
+The rest of the skill family (`sylius-dev`, `sylius-resource`, `sylius-frontend`,
+`sylius-events`, `sylius-mailer`, `sylius-verify`) is written generically - placeholders like
 `<Name>`, `<X>`, `<alias>`, `<TriggerField>` stand for whatever feature
 you're actually building. This file is the one place that stays fully
 concrete: a real feature, built start to finish, so every abstract rule
@@ -14,7 +14,7 @@ Doctrine-detected state transition, an async email, a hook that has to
 disappear once the precondition changes, and a Playwright acceptance gate
 that has to prove all of that end to end.
 
-Rule IDs are tagged in parens - cross-reference `anti-patterns.md` for the
+Rule IDs are tagged in parens - cross-reference each skill's `anti-patterns.md` for the
 ❌/✅ pair and "Why".
 
 ## 1. Resource
@@ -201,11 +201,11 @@ empty/wrong host.
 6. Trigger restock through ORM: `bin/console app:variant:restock TSHIRT_S 10`.
    **Never** `doctrine:query:sql "UPDATE ..."` (R-PLAYWRIGHT-NO-RAW-SQL) -
    raw SQL bypasses UnitOfWork, so the listener in step 6 above never fires.
-7. Mate Symfony profiler tools → `symfony-profiler-list` → latest token for the
+7. Symfony Mate bridge profiler tools → `symfony-profiler-list` → latest token for the
    restock request. Sync Messenger in dev ⇒ handler ran in the same request.
 8. **Email proof (R-EMAIL-PROOF).** Scrape `http://localhost:8025/api/v1/messages`
    (mailpit) for the matching subject + recipient + locale-correct body, OR
-   read the profiler mailer collector for that token. **Not** a
+   read `symfony-profiler://profile/<token>/mailer` for that token. **Not** a
    `notifiedAt IS NOT NULL` check - the handler reaches end-of-loop even when
    `MAILER_DSN=null://null` swallows the message silently.
 9. **Post-state.** `browser_navigate` back to the product page. `browser_snapshot`
