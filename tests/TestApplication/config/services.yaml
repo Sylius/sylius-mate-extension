@@ -1,0 +1,13 @@
+services:
+    Sylius\MateExtension\Tests\TestApplication\Twig\MateTestExtension:
+        tags: ['twig.extension']
+
+    Sylius\MateExtension\Tests\TestApplication\Controller\PingController:
+        tags: ['controller.service_arguments']
+
+    # project-owned decorator of a sylius.* service, asserted by sylius_service_decorators tests
+    Sylius\MateExtension\Tests\TestApplication\Calculator\InnerProductVariantPricesCalculator:
+        decorates: sylius.calculator.product_variant_price
+        decoration_priority: 10
+        arguments:
+            - '@.inner'

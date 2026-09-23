@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.5/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
+         bootstrap="vendor/sylius/test-application/config/bootstrap.php"
          colors="true"
          cacheDirectory=".phpunit.cache"
          failOnRisky="true"
@@ -9,6 +9,9 @@
     <testsuites>
         <testsuite name="unit">
             <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="integration">
+            <directory>tests/Integration</directory>
         </testsuite>
     </testsuites>
     <source>

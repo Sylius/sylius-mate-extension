@@ -1,0 +1,13 @@
+# Deliberate fixtures asserted by tests/Integration/Tool/Route.
+mate_test_ping:
+    path: /mate-test/ping
+    methods: [GET]
+    controller: Sylius\MateExtension\Tests\TestApplication\Controller\PingController
+
+# deliberate double segment: sylius_route_inspect must report "books" as duplicated
+mate_test_double_prefix:
+    path: /mate-test/books/books/{id}
+    methods: [GET]
+    controller: Sylius\MateExtension\Tests\TestApplication\Controller\PingController
+    requirements:
+        id: '\d+'
