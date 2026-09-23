@@ -72,9 +72,9 @@ $ composer test              # both
 The integration suite runs every tool against a real compiled Sylius container
 (`sylius/test-application`, booted through `HostKernelProvider` exactly like the Mate CLI
 boots a host project). Fixtures it asserts on live in `tests/TestApplication/` — a route with a
-duplicated segment, a Twig extension and templates, a grid with a deliberate `main.delete`, and a
-project-owned decorator of a `sylius.*` service. No database is needed: booting the kernel and
-compiling the container never connects.
+duplicated segment, a Twig extension and templates, a grid with a deliberate `main.delete`, a
+decoration chain on a `sylius.*` service, a project-owned resource and hookables. No database is
+needed: booting the kernel and compiling the container never connects.
 
 Useful Mate commands while developing:
 

@@ -48,3 +48,14 @@ sylius_grid:
                 item:
                     update:
                         type: update
+
+# project-owned hookables on a project-owned hook, asserted by the hook tools' tests
+sylius_twig_hooks:
+    hooks:
+        'mate_test.page.content':
+            greeting:
+                template: 'mate_test/greeting.html.twig'
+                priority: 5
+            footer:
+                template: 'mate_test/footer.html.twig'
+                priority: -5
