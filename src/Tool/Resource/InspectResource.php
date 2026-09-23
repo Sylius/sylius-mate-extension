@@ -6,14 +6,12 @@ namespace Sylius\MateExtension\Tool\Resource;
 
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
-use Sylius\Resource\Metadata\RegistryInterface;
+use Sylius\MateExtension\Resource\ResourceRegistryReader;
 use Sylius\Resource\Model\ResourceInterface;
 use Symfony\AI\Mate\Attribute\MateTool;
 
 final class InspectResource
 {
-    private const REGISTRY = 'sylius.resource_registry';
-
     public function __construct(
         private readonly HostContainerProvider $host,
     ) {
@@ -32,9 +30,9 @@ final class InspectResource
             return Envelope::error('invalid_alias', 'Argument "alias" must not be empty.');
         }
 
-        $registry = $this->host->getContainer()->get(self::REGISTRY);
-        if (!$registry instanceof RegistryInterface) {
-            return Envelope::error('registry_unavailable', 'Service "sylius.resource_registry" is not available.');
+        $registry = ResourceRegistryReader::read($this->host->getContainer());
+        if (null === $registry) {
+            return ResourceRegistryReader::unavailable();
         }
 
         try {

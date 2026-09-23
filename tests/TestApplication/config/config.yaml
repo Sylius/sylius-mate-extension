@@ -3,6 +3,22 @@
 imports:
     - { resource: 'services.yaml' }
 
+doctrine:
+    orm:
+        mappings:
+            MateTest:
+                type: attribute
+                dir: '%kernel.project_dir%/../../../tests/TestApplication/src/Entity'
+                prefix: Sylius\MateExtension\Tests\TestApplication\Entity
+                is_bundle: false
+
+# project-owned resource with Sylius defaults (no custom factory/repository), asserted by resource tools' tests
+sylius_resource:
+    resources:
+        mate_test.book:
+            classes:
+                model: Sylius\MateExtension\Tests\TestApplication\Entity\Book
+
 twig:
     paths:
         '%kernel.project_dir%/../../../tests/TestApplication/templates': ~
@@ -13,14 +29,14 @@ sylius_grid:
             driver:
                 name: doctrine/orm
                 options:
-                    class: '%sylius.model.product.class%'
+                    class: Sylius\MateExtension\Tests\TestApplication\Entity\Book
             fields:
-                code:
+                id:
                     type: string
-                name:
+                title:
                     type: string
             filters:
-                code:
+                title:
                     type: string
             actions:
                 main:
