@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Kernel;
 
+use Composer\Autoload\ClassLoader;
+
 /**
  * Shared, registry-free composer.lock / vendor introspection used by any
  * tool that needs to know "what package owns this class" or "what's
@@ -17,7 +19,7 @@ final class ComposerPackageResolver
      */
     public static function readLock(string $projectDir): array
     {
-        $lockFile = $projectDir . '/composer.lock';
+        $lockFile = self::composerRoot($projectDir) . '/composer.lock';
         if (!is_file($lockFile)) {
             return [];
         }
@@ -81,7 +83,7 @@ final class ComposerPackageResolver
             return null;
         }
 
-        $vendorPrefix = rtrim($projectDir, '/') . '/vendor/';
+        $vendorPrefix = self::vendorDir($projectDir) . '/';
         if (!str_starts_with($file, $vendorPrefix)) {
             return null;
         }
@@ -98,5 +100,28 @@ final class ComposerPackageResolver
             'version' => $lock[$packageName]['version'] ?? null,
             'type' => $lock[$packageName]['type'] ?? null,
         ];
+    }
+
+    /**
+     * The Composer root: kernel.project_dir when it holds `vendor/` or a
+     * `composer.lock`, otherwise the root the running autoloader was loaded
+     * from — the two differ when the kernel lives in a package (e.g.
+     * sylius/test-application).
+     */
+    public static function composerRoot(string $projectDir): string
+    {
+        $projectDir = rtrim($projectDir, '/');
+        if (is_dir($projectDir . '/vendor') || is_file($projectDir . '/composer.lock')) {
+            return $projectDir;
+        }
+
+        $loaderFile = (new \ReflectionClass(ClassLoader::class))->getFileName();
+
+        return false === $loaderFile ? $projectDir : \dirname($loaderFile, 3);
+    }
+
+    public static function vendorDir(string $projectDir): string
+    {
+        return self::composerRoot($projectDir) . '/vendor';
     }
 }

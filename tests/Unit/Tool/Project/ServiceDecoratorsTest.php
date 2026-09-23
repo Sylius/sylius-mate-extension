@@ -9,6 +9,7 @@ use Sylius\MateExtension\Tests\Unit\Fake\FakeHostContainerProvider;
 use Sylius\MateExtension\Tool\Project\ServiceDecorators;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
+use Symfony\Component\HttpKernel\HttpKernel;
 use Symfony\Component\HttpKernel\Kernel;
 
 final class ServiceDecoratorsTest extends TestCase
@@ -26,13 +27,16 @@ final class ServiceDecoratorsTest extends TestCase
         $this->deleteTree($this->sandbox);
     }
 
-    public function testDetectsDecoratorsOfSyliusServicesFromContainerXmlDump(): void
+    public function testReconstructsDecorationChainFromContainerXmlDump(): void
     {
-        // decorator_class is a real, vendor-installed class (this repo's own
-        // symfony/http-kernel) so the ComposerPackageResolver branch that
+        // The dump mirrors what DecoratorServicePass leaves behind: no
+        // `decorates=`, a container.decorator tag on the OUTERMOST decorator
+        // only, `<id>.inner` aliases pointing at the next decorator and the
+        // original definition moved to the innermost `.inner` id.
+        // decorator classes are real, vendor-installed classes (this repo's
+        // own symfony/http-kernel) so the ComposerPackageResolver branch that
         // walks ReflectionClass::getFileName() against <project_dir>/vendor/
-        // is exercised against real data — kernel.project_dir is pointed at
-        // this repo's actual root for that reason.
+        // is exercised against real data.
         $dumpFile = $this->sandbox . '/container.xml';
         file_put_contents($dumpFile, sprintf(
             <<<'XML'
@@ -41,15 +45,27 @@ final class ServiceDecoratorsTest extends TestCase
                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                     xsi:schemaLocation="http://symfony.com/schema/dic/services https://symfony.com/schema/dic/services/services-1.0.xsd">
                     <services>
-                        <service id="acme.decorator.product_availability_checker" class="%s" decorates="sylius.checker.inventory.availability" decoration-priority="5"/>
-                        <service id="acme.some_unrelated_decorator" class="%s" decorates="acme.unrelated_service"/>
-                        <service id="acme.plain_service" class="%s"/>
+                        <service id="acme.outer_checker" class="%1$s">
+                            <tag name="container.decorator" id="sylius.checker.inventory.availability" inner="acme.inner_checker.inner"/>
+                            <argument type="service" id="acme.inner_checker"/>
+                        </service>
+                        <service id="acme.outer_checker.inner" alias="acme.inner_checker"/>
+                        <service id="acme.inner_checker" class="%2$s">
+                            <argument type="service" id="acme.inner_checker.inner"/>
+                        </service>
+                        <service id="acme.inner_checker.inner" class="Sylius\Component\Inventory\Checker\AvailabilityChecker"/>
+                        <service id="sylius.checker.inventory.availability" alias="acme.outer_checker"/>
+                        <service id="acme.some_unrelated_decorator" class="%1$s">
+                            <tag name="container.decorator" id="acme.unrelated_service" inner="acme.some_unrelated_decorator.inner"/>
+                            <argument type="service" id="acme.some_unrelated_decorator.inner"/>
+                        </service>
+                        <service id="acme.some_unrelated_decorator.inner" class="%1$s"/>
+                        <service id="acme.plain_service" class="%1$s"/>
                     </services>
                 </container>
                 XML,
             Kernel::class,
-            Kernel::class,
-            Kernel::class,
+            HttpKernel::class,
         ));
 
         $container = new Container(new ParameterBag([
@@ -61,13 +77,22 @@ final class ServiceDecoratorsTest extends TestCase
 
         $result = ($tool)();
 
-        self::assertCount(1, $result['items']);
-        self::assertSame('sylius.checker.inventory.availability', $result['items'][0]['original_service_id']);
-        self::assertSame('acme.decorator.product_availability_checker', $result['items'][0]['decorator_service_id']);
-        self::assertSame(Kernel::class, $result['items'][0]['decorator_class']);
-        self::assertSame('symfony/http-kernel', $result['items'][0]['decorator_package']);
-        self::assertNotNull($result['items'][0]['decorator_package_version']);
-        self::assertSame(5, $result['items'][0]['priority']);
+        self::assertCount(2, $result['items']);
+
+        [$outer, $inner] = $result['items'];
+        self::assertSame('sylius.checker.inventory.availability', $outer['original_service_id']);
+        self::assertSame('acme.outer_checker', $outer['decorator_service_id']);
+        self::assertSame(Kernel::class, $outer['decorator_class']);
+        self::assertSame('symfony/http-kernel', $outer['decorator_package']);
+        self::assertNotNull($outer['decorator_package_version']);
+        self::assertSame(1, $outer['chain_position']);
+        self::assertSame(2, $outer['chain_length']);
+        self::assertSame('Sylius\\Component\\Inventory\\Checker\\AvailabilityChecker', $outer['original_class']);
+
+        self::assertSame('acme.inner_checker', $inner['decorator_service_id']);
+        self::assertSame(HttpKernel::class, $inner['decorator_class']);
+        self::assertSame(2, $inner['chain_position']);
+        self::assertSame(2, $inner['chain_length']);
     }
 
     public function testEmptyWhenDebugContainerDumpParameterMissing(): void
