@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tests\Integration\Tool\Grid;
 
-use Sylius\Component\Core\Model\Product;
 use Sylius\MateExtension\Tests\Integration\IntegrationTestCase;
+use Sylius\MateExtension\Tests\TestApplication\Entity\Book;
 use Sylius\MateExtension\Tool\Grid\ListGrids;
 
 final class ListGridsTest extends IntegrationTestCase
@@ -18,9 +18,9 @@ final class ListGridsTest extends IntegrationTestCase
         $grid = $result['items'][0];
         self::assertSame('mate_test_book', $grid['name']);
         self::assertSame('doctrine/orm', $grid['driver']);
-        self::assertSame(Product::class, $grid['resource_class']);
-        self::assertSame(['code', 'name'], $grid['fields']);
-        self::assertSame(['code'], $grid['filters']);
+        self::assertSame(Book::class, $grid['resource_class']);
+        self::assertSame(['id', 'title'], $grid['fields']);
+        self::assertSame(['title'], $grid['filters']);
         self::assertSame(['main', 'item'], $grid['actions']);
     }
 

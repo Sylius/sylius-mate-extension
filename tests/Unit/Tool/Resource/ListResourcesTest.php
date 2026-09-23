@@ -7,32 +7,31 @@ namespace Sylius\MateExtension\Tests\Unit\Tool\Resource;
 use PHPUnit\Framework\TestCase;
 use Sylius\MateExtension\Tests\Unit\Fake\FakeHostContainerProvider;
 use Sylius\MateExtension\Tool\Resource\ListResources;
-use Sylius\Resource\Metadata\Registry;
 use Symfony\Component\DependencyInjection\Container;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 
 final class ListResourcesTest extends TestCase
 {
     public function testReturnsAllRegisteredResources(): void
     {
-        $registry = new Registry();
-        $registry->addFromAliasAndConfiguration('app.foo', [
-            'driver' => 'doctrine/orm',
-            'classes' => [
-                'model' => 'App\\Entity\\Foo',
-                'interface' => 'App\\Entity\\FooInterface',
-                'repository' => 'App\\Repository\\FooRepository',
-                'factory' => 'App\\Factory\\FooFactory',
-                'form' => 'App\\Form\\Type\\FooType',
+        $tool = new ListResources($this->host([
+            'app.foo' => [
+                'driver' => 'doctrine/orm',
+                'classes' => [
+                    'model' => 'App\\Entity\\Foo',
+                    'interface' => 'App\\Entity\\FooInterface',
+                    'repository' => 'App\\Repository\\FooRepository',
+                    'factory' => 'App\\Factory\\FooFactory',
+                    'form' => 'App\\Form\\Type\\FooType',
+                ],
             ],
-        ]);
-        $registry->addFromAliasAndConfiguration('app.bar', [
-            'driver' => 'doctrine/orm',
-            'classes' => [
-                'model' => 'App\\Entity\\Bar',
+            'app.bar' => [
+                'driver' => 'doctrine/orm',
+                'classes' => [
+                    'model' => 'App\\Entity\\Bar',
+                ],
             ],
-        ]);
-
-        $tool = new ListResources($this->host($registry));
+        ]));
 
         $result = ($tool)();
 
@@ -45,11 +44,10 @@ final class ListResourcesTest extends TestCase
 
     public function testFiltersByAliasPrefix(): void
     {
-        $registry = new Registry();
-        $registry->addFromAliasAndConfiguration('app.foo', ['driver' => 'doctrine/orm', 'classes' => ['model' => 'Foo']]);
-        $registry->addFromAliasAndConfiguration('sylius.product', ['driver' => 'doctrine/orm', 'classes' => ['model' => 'Product']]);
-
-        $tool = new ListResources($this->host($registry));
+        $tool = new ListResources($this->host([
+            'app.foo' => ['driver' => 'doctrine/orm', 'classes' => ['model' => 'Foo']],
+            'sylius.product' => ['driver' => 'doctrine/orm', 'classes' => ['model' => 'Product']],
+        ]));
 
         $result = ($tool)('sylius.');
 
@@ -59,7 +57,7 @@ final class ListResourcesTest extends TestCase
 
     public function testReturnsEmptyEnvelopeWhenNothingMatches(): void
     {
-        $tool = new ListResources($this->host(new Registry()));
+        $tool = new ListResources($this->host([]));
 
         $result = ($tool)('missing.');
 
@@ -69,12 +67,12 @@ final class ListResourcesTest extends TestCase
 
     public function testPaginatesWithCursor(): void
     {
-        $registry = new Registry();
+        $resources = [];
         foreach (['a.1', 'a.2', 'a.3', 'a.4'] as $alias) {
-            $registry->addFromAliasAndConfiguration($alias, ['driver' => 'doctrine/orm', 'classes' => ['model' => 'M']]);
+            $resources[$alias] = ['driver' => 'doctrine/orm', 'classes' => ['model' => 'M']];
         }
 
-        $tool = new ListResources($this->host($registry));
+        $tool = new ListResources($this->host($resources));
 
         $first = ($tool)(limit: 2);
         self::assertSame(['a.1', 'a.2'], array_column($first['items'], 'alias'));
@@ -85,11 +83,20 @@ final class ListResourcesTest extends TestCase
         self::assertArrayNotHasKey('cursor', $second);
     }
 
-    private function host(Registry $registry): FakeHostContainerProvider
+    public function testErrorsWhenResourceBundleIsNotEnabled(): void
     {
-        $container = new Container();
-        $container->set('sylius.resource_registry', $registry);
+        $tool = new ListResources(new FakeHostContainerProvider(new Container()));
 
-        return new FakeHostContainerProvider($container);
+        $result = ($tool)();
+
+        self::assertSame('registry_unavailable', $result['error']['code']);
+    }
+
+    /**
+     * @param array<string, array<string, mixed>> $resources the `sylius.resources` parameter shape
+     */
+    private function host(array $resources): FakeHostContainerProvider
+    {
+        return new FakeHostContainerProvider(new Container(new ParameterBag(['sylius.resources' => $resources])));
     }
 }

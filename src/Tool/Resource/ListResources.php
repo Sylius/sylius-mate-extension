@@ -6,14 +6,12 @@ namespace Sylius\MateExtension\Tool\Resource;
 
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Sylius\MateExtension\Resource\ResourceRegistryReader;
 use Sylius\Resource\Metadata\MetadataInterface;
-use Sylius\Resource\Metadata\RegistryInterface;
 use Symfony\AI\Mate\Attribute\MateTool;
 
 final class ListResources
 {
-    private const SERVICE_ID = 'sylius.resource_registry';
-
     public function __construct(
         private readonly HostContainerProvider $host,
     ) {
@@ -36,12 +34,9 @@ final class ListResources
      */
     private function doList(?string $alias_prefix, int $limit, ?string $cursor): array
     {
-        $registry = $this->host->getContainer()->get(self::SERVICE_ID);
-        if (!$registry instanceof RegistryInterface) {
-            return Envelope::error(
-                'registry_unavailable',
-                sprintf('Service "%s" is not a %s.', self::SERVICE_ID, RegistryInterface::class),
-            );
+        $registry = ResourceRegistryReader::read($this->host->getContainer());
+        if (null === $registry) {
+            return ResourceRegistryReader::unavailable();
         }
 
         $items = [];

@@ -94,7 +94,7 @@ final class PluginCompatibility
 
     private function readSyliusConstraint(string $projectDir, string $packageName): ?string
     {
-        $composerJsonPath = $projectDir . '/vendor/' . $packageName . '/composer.json';
+        $composerJsonPath = ComposerPackageResolver::vendorDir($projectDir) . '/' . $packageName . '/composer.json';
         if (!is_file($composerJsonPath)) {
             return null;
         }
