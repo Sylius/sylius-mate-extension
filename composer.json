@@ -14,7 +14,8 @@
         "phpstan/phpstan": "^2.2",
         "phpstan/phpstan-phpunit": "^2.0",
         "phpunit/phpunit": "^11.5",
-        "sylius/sylius": "^2.0"
+        "sylius/sylius": "^2.0",
+        "sylius/test-application": "^2.0@alpha"
     },
     "autoload": {
         "psr-4": {
@@ -23,7 +24,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Sylius\\MateExtension\\Tests\\": "tests/"
+            "Sylius\\MateExtension\\Tests\\": "tests/",
+            "Sylius\\MateExtension\\Tests\\TestApplication\\": "tests/TestApplication/src/"
         }
     },
     "suggest": {
@@ -31,10 +33,17 @@
     },
     "scripts": {
         "test": "vendor/bin/phpunit",
+        "test:unit": "vendor/bin/phpunit --testsuite unit",
+        "test:integration": "vendor/bin/phpunit --testsuite integration",
         "phpstan": "vendor/bin/phpstan analyse"
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "php-http/discovery": false,
+            "symfony/flex": true,
+            "symfony/runtime": true
+        }
     },
     "extra": {
         "ai-mate": {
@@ -42,6 +51,9 @@
             "includes": ["config/config.php"],
             "instructions": "INSTRUCTIONS.md",
             "skills": ["skills"]
+        },
+        "symfony": {
+            "require": "7.4.*"
         }
     },
     "prefer-stable": true

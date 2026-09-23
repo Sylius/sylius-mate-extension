@@ -1,0 +1,34 @@
+# Deliberate fixtures on top of the stock Sylius test application. Every value here
+# is asserted by name in tests/Integration — change both sides together.
+imports:
+    - { resource: 'services.yaml' }
+
+twig:
+    paths:
+        '%kernel.project_dir%/../../../tests/TestApplication/templates': ~
+
+sylius_grid:
+    grids:
+        mate_test_book:
+            driver:
+                name: doctrine/orm
+                options:
+                    class: '%sylius.model.product.class%'
+            fields:
+                code:
+                    type: string
+                name:
+                    type: string
+            filters:
+                code:
+                    type: string
+            actions:
+                main:
+                    create:
+                        type: create
+                    # deliberate mistake: delete is item-scoped, sylius_grid_actions_audit must flag it
+                    delete:
+                        type: delete
+                item:
+                    update:
+                        type: update
