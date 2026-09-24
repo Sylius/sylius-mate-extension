@@ -51,7 +51,7 @@ final class ServicesYamlAudit
         $explicitDefs = [];
 
         foreach ($files as $file) {
-            $parsed = Yaml::parseFile($file);
+            $parsed = Yaml::parseFile($file, Yaml::PARSE_CUSTOM_TAGS);
             if (!\is_array($parsed) || !\is_array($parsed['services'] ?? null)) {
                 continue;
             }
@@ -210,7 +210,7 @@ final class ServicesYamlAudit
      */
     private function resolveImports(string $rootFile): array
     {
-        $parsed = Yaml::parseFile($rootFile);
+        $parsed = Yaml::parseFile($rootFile, Yaml::PARSE_CUSTOM_TAGS);
         $imports = \is_array($parsed) && \is_array($parsed['imports'] ?? null) ? $parsed['imports'] : [];
 
         $files = [];

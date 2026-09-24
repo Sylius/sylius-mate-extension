@@ -48,7 +48,7 @@ final class ServicesYamlProfile
             );
         }
 
-        $parsed = Yaml::parseFile($path);
+        $parsed = Yaml::parseFile($path, Yaml::PARSE_CUSTOM_TAGS);
         if (!\is_array($parsed)) {
             return Envelope::error('parse_failed', sprintf('Could not parse %s as YAML.', $path));
         }

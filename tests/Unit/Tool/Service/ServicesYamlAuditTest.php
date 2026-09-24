@@ -86,6 +86,42 @@ final class ServicesYamlAuditTest extends TestCase
         self::assertSame([], $result['conflicts']);
     }
 
+    public function testAuditsFilesWithCustomTags(): void
+    {
+        file_put_contents($this->sandbox . '/config/services.yaml', <<<'YAML'
+            imports:
+                - { resource: 'services/' }
+
+            services:
+                App\:
+                    resource: '../src/'
+                    exclude:
+                        - '../src/Entity/'
+
+                App\Registry\ProviderRegistry:
+                    arguments:
+                        $providers: !tagged_iterator app.provider
+            YAML);
+
+        file_put_contents($this->sandbox . '/config/services/locator.yaml', <<<'YAML'
+            services:
+                app.handler_locator:
+                    class: Symfony\Component\DependencyInjection\ServiceLocator
+                    arguments: [!tagged_locator { tag: app.handler }]
+            YAML);
+
+        $tool = new ServicesYamlAudit($this->host());
+
+        $result = $tool();
+
+        self::assertArrayNotHasKey('error', $result);
+        self::assertSame(
+            ['App\\Registry\\ProviderRegistry', 'app.handler_locator'],
+            array_column($result['items'], 'id'),
+        );
+        self::assertCount(2, $result['files_audited']);
+    }
+
     private function host(): FakeHostContainerProvider
     {
         $container = new Container(new ParameterBag(['kernel.project_dir' => $this->sandbox]));
