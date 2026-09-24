@@ -66,6 +66,33 @@ final class ServicesYamlProfileTest extends TestCase
         self::assertSame('App\\Controller\\', $profile['controller_glob']['service_pattern']);
     }
 
+    public function testReadsProfileWhenServicesUseCustomTags(): void
+    {
+        file_put_contents(
+            $this->sandbox . '/config/services.yaml',
+            <<<'YAML'
+            services:
+                _defaults:
+                    autowire: true
+
+                App\:
+                    resource: '../src/'
+
+                App\Registry\ProviderRegistry:
+                    arguments:
+                        $providers: !tagged_iterator app.provider
+            YAML,
+        );
+
+        $tool = new ServicesYamlProfile($this->host());
+
+        $result = ($tool)();
+
+        self::assertArrayNotHasKey('error', $result);
+        self::assertSame(['autowire' => true], $result['profile']['defaults']);
+        self::assertSame('App\\', $result['profile']['app_glob']['service_pattern']);
+    }
+
     public function testReturnsErrorWhenMissing(): void
     {
         $tool = new ServicesYamlProfile($this->host());
