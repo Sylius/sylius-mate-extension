@@ -25,6 +25,7 @@ final class ResourceTemplate
 
     public function __construct(
         private readonly string $scaffoldDir,
+        private readonly ?string $rootDir = null,
     ) {
     }
 
@@ -302,12 +303,8 @@ final class ResourceTemplate
 
     private function detectAppNamespace(): string
     {
-        $cwd = getcwd();
-        if (false === $cwd) {
-            return 'App';
-        }
-
-        $composerJson = $cwd . '/composer.json';
+        $rootDir = $this->rootDir ?? (getcwd() ?: '.');
+        $composerJson = $rootDir . '/composer.json';
         if (!is_file($composerJson)) {
             return 'App';
         }
@@ -331,7 +328,7 @@ final class ResourceTemplate
             }
 
             foreach ((array) $paths as $path) {
-                if (\is_string($path) && is_file(rtrim($cwd . '/' . $path, '/') . '/Kernel.php')) {
+                if (\is_string($path) && is_file(rtrim($rootDir . '/' . $path, '/') . '/Kernel.php')) {
                     return rtrim($ns, '\\');
                 }
             }

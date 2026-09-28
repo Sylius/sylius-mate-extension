@@ -24,12 +24,18 @@ final class HostKernelProvider implements HostContainerProvider
         private readonly string $kernelClass = 'App\\Kernel',
         private readonly string $env = 'dev',
         private readonly bool $debug = true,
+        private readonly ?string $rootDir = null,
     ) {
     }
 
     public function getContainer(): ContainerInterface
     {
         return $this->getKernel()->getContainer();
+    }
+
+    public function getRootDir(): string
+    {
+        return $this->rootDir ?? (getcwd() ?: '.');
     }
 
     public function getKernel(): KernelInterface
@@ -113,12 +119,8 @@ final class HostKernelProvider implements HostContainerProvider
      */
     private function discoverKernelCandidates(): array
     {
-        $cwd = getcwd();
-        if (false === $cwd) {
-            return [];
-        }
-
-        $composerJson = $cwd . '/composer.json';
+        $rootDir = $this->getRootDir();
+        $composerJson = $rootDir . '/composer.json';
         if (!is_file($composerJson)) {
             return [];
         }
@@ -153,7 +155,7 @@ final class HostKernelProvider implements HostContainerProvider
                     continue;
                 }
 
-                $kernelFile = rtrim($cwd . '/' . $path, '/') . '/Kernel.php';
+                $kernelFile = rtrim($rootDir . '/' . $path, '/') . '/Kernel.php';
                 if (is_file($kernelFile)) {
                     $candidates[] = rtrim($namespace, '\\') . '\\Kernel';
                 }

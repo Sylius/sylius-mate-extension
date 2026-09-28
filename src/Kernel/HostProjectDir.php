@@ -19,6 +19,6 @@ final class HostProjectDir
             return $projectDir;
         }
 
-        return getcwd() ?: '.';
+        return $host->getRootDir();
     }
 }
