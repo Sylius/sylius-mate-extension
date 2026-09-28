@@ -84,6 +84,11 @@ Call the Mate tool `sylius_cache_clear` once (PHP-native, no shell). Never `bin/
 
 **Pre-req:** Dev server up. Project context tells AI URL (default `http://localhost:8000`); if down, ask the user to start it - do not silently skip. Email assertion needs mailpit or a readable profiler (bridge tools or `var/cache/dev/profiler`).
 
+**Environment check (before choosing the email proof):**
+
+1. `symfony-dotenv-check` once, no `--key` - every declared variable, which `.env*` file declares it and whether it resolves (value masked). Pick `MAILER_DSN`, `DATABASE_URL` and the `SYLIUS_MESSENGER_TRANSPORT_*_DSN` the feature touches. One missing from the listing: `--key=<NAME>` for it - resolving only from the shell/CI environment means the next run elsewhere differs; tell the user. No bridge: grep `.env*`.
+2. `sylius_email_capture_status` - the actual transport (`smtp://` vs `null://`) and the recommended proof target. Dotenv-check cannot tell them apart (masked value), so this call stays mandatory.
+
 **Authoring rule:** Write a repeatable spec file at `tests/Playwright/<feature>.spec.ts` (or the project's configured Playwright spec location). Do NOT run the steps as one-shot exploratory tool calls. Then execute the spec via Playwright MCP. Spec must be committable, re-runnable, deterministic.
 
 **Coverage rule:** spec drives ALL observable user paths in the feature, not just the entry point. Single-step specs rejected. `sylius-dev/reference/worked-example.md` walks this exact protocol against a concrete feature.
