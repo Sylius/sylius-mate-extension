@@ -27,9 +27,7 @@ use Sylius\MateExtension\Tool\Resource\ListResources;
 use Sylius\MateExtension\Tool\Resource\ResourceTemplate;
 use Sylius\MateExtension\Tool\Route\InspectRoute;
 use Sylius\MateExtension\Tool\Route\ShowRoute;
-use Sylius\MateExtension\Tool\Service\ServicesYamlAudit;
 use Sylius\MateExtension\Tool\Service\ServicesYamlPatchExclude;
-use Sylius\MateExtension\Tool\Service\ServicesYamlProfile;
 use Sylius\MateExtension\Tool\Translation\TranslationCreate;
 use Sylius\MateExtension\Tool\Twig\ListFunctions;
 use Sylius\MateExtension\Tool\Twig\RenderTemplate;
@@ -71,8 +69,6 @@ return static function (ContainerConfigurator $configurator): void {
         CacheClear::class => [service(HostKernelProvider::class)],
         MailerCaptureStatus::class => [service(HostKernelProvider::class)],
         RestockViaHttp::class => [service(HostKernelProvider::class)],
-        ServicesYamlProfile::class => [service(HostKernelProvider::class)],
-        ServicesYamlAudit::class => [service(HostKernelProvider::class)],
         ServicesYamlPatchExclude::class => [service(HostKernelProvider::class)],
         ProjectProfile::class => [service(HostKernelProvider::class)],
         InstalledPlugins::class => [service(HostKernelProvider::class)],

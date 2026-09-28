@@ -2,7 +2,7 @@
 
 Mate CLI tools exposing the Sylius runtime domain — mostly read-only, the three mutating ones are flagged below. Invoke via `vendor/bin/mate tools:call <tool> --<param>=<value>` (nested values via `--json`). Call before generating any Sylius code; call again to audit after.
 
-Container and profiler introspection come from the Symfony bridge (`symfony/ai-symfony-mate-extension`), which is optional here — the `sylius/sylius-ai-dev-tools` pack installs it; `sylius_project_profile` reports it as `symfony_mate_bridge`. With the bridge: `symfony-services --query=<fragment>` / `symfony-service-detail --id=<exact id>` instead of `bin/console debug:container`, `symfony-profiler-list` plus the `symfony-profiler://profile/{token}/{collector}` resource instead of reading `var/cache/dev/profiler` by hand. Without it: `bin/console debug:container <id> --show-arguments`. The bridge tools read the dumped container XML, so after `sylius_cache_clear` call any kernel-booting `sylius_*` tool first to recompile it.
+Container and profiler introspection come from the Symfony bridge (`symfony/ai-symfony-mate-extension`), which is optional here — the `sylius/sylius-ai-dev-tools` pack installs it; `sylius_project_profile` reports it as `symfony_mate_bridge`. With the bridge: `symfony-services --query=<fragment>` / `symfony-service-detail --id=<exact id>` instead of `bin/console debug:container`, `symfony-profiler-list` plus the `symfony-profiler://profile/{token}/{collector}` resource instead of reading `var/cache/dev/profiler` by hand. Registration check for a class you wrote: `symfony-service-detail --id=<FQCN>` — `autowired` / `autoconfigured` / `public` flags and resolved `arguments`; "not found" plus a hit in `symfony-services --tag=container.excluded --query=<FQCN>` means a resource glob's `exclude:` swallowed it. Without it: `bin/console debug:container <id> --show-arguments` (same flags). The bridge tools read the dumped container XML, so after `sylius_cache_clear` call any kernel-booting `sylius_*` tool first to recompile it.
 
 The skills shipped with this extension (`sylius-dev` entry point + `sylius-resource`, `sylius-frontend`, `sylius-events`, `sylius-mailer`, `sylius-verify`) say when and why to call these tools; load `sylius-dev` for any Sylius feature work.
 
@@ -28,8 +28,6 @@ The skills shipped with this extension (`sylius-dev` entry point + `sylius-resou
 | `sylius_routes_show` | Resolving a Symfony route by name. **Call this before linking to or generating any route reference** so the route definitely exists |
 | `sylius_route_inspect` | Route diagnostic w/ duplicate-segment detection (catches double-prefix bugs from outer prefix + sylius.resource loader) |
 | `sylius_cache_clear` | **Mutating.** Pre-Playwright cache clear, **PHP-native** (does NOT shell `bin/console`; routes through `Symfony\\Bundle\\FrameworkBundle\\Console\\Application` programmatically, fallback purge of `var/cache/<env>/`). Use this instead of any Bash `cache:clear` — the harness Bash classifier blocks the shell form |
-| `sylius_services_yaml_profile` | Read once per session: host project DI defaults, `_instanceof` overrides, app + controller globs. Tells you how a new class will be registered (and whether you need an explicit service entry) |
-| `sylius_services_yaml_audit` | Audit every services yaml file (root + imports) for explicit-def vs `App\:` glob conflicts. Returns `conflicts[]` with fix hints |
 | `sylius_services_yaml_patch_exclude` | **Mutating.** Idempotently add an entry to the `<AppNs>\:` `exclude:` list in `config/services.yaml`. Use when emitting explicit service defs that the glob would otherwise capture |
 | `sylius_email_template_skeleton` | Emit a working `templates/email/<code>.html.twig` extending `@SyliusCore/Email/layout.html.twig` + matching `sylius_mailer.yaml` block. Use instead of writing email templates from scratch |
 | `sylius_translation_create` | **Mutating.** Merge a key tree into `translations/<domain>.<locale>.yaml`. Pass `locales: [...]` for multi-locale projects (one file per locale). Auto-detects locale from `kernel.default_locale`. Returns `cache_clear_required: true` |
@@ -53,7 +51,6 @@ The skills shipped with this extension (`sylius-dev` entry point + `sylius-resou
 
 Run once when starting a new feature, before any code edit:
 
-1. `sylius_services_yaml_profile` — learn DI defaults
-2. `sylius_project_profile` — namespace / locales / DSN
-3. `sylius_installed_plugins` + `sylius_service_decorators` — plugin inventory + decorator awareness
-4. `sylius_domain_list_resources` + `sylius_hooks_list` — sanity scan
+1. `sylius_project_profile` — namespace / locales / DSN / `exclude:` entries / bridge presence
+2. `sylius_installed_plugins` + `sylius_service_decorators` — plugin inventory + decorator awareness
+3. `sylius_domain_list_resources` + `sylius_hooks_list` — sanity scan

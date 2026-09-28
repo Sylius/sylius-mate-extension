@@ -94,7 +94,7 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
 **Verify:**
 
 - `php -l` on form file.
-- `symfony-service-detail --id=<AppNs>\Form\Type\<Ns>\<X>Type` - must be found under the explicit FQCN-keyed def, `constructor` args resolved.
+- `symfony-service-detail --id=<AppNs>\Form\Type\<Ns>\<X>Type` - must be found under the explicit FQCN-keyed def, `arguments` resolved.
 
 ## 6. Controller
 
@@ -116,7 +116,7 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
       tags: ['controller.service_arguments']
   ```
 
-  Verify via `symfony-service-detail --id=<FQCN>` - no missing `constructor` args.
+  Verify via `symfony-service-detail --id=<FQCN>` - no missing `arguments`.
 - Inject `FactoryInterface` by service id via Autowire attribute when no custom factory exists: `#[Autowire(service: 'app.factory.<alias>')] private FactoryInterface $factory`. For app resources w/ a custom factory class, inject `<Name>FactoryInterface` instead. Inject repository **Core-package interface** (`Sylius\Component\Core\Repository\ProductRepositoryInterface` etc. for core resources; app-package `<Name>RepositoryInterface` for app resources). Never bare `Sylius\Resource\Doctrine\Persistence\RepositoryInterface` - ambiguous binding, container can't resolve.
 - For **Sylius core repos** (Product, ProductVariant, Channel, Customer, Order, etc.) declare aliases in `config/services.yaml` (R-CORE-REPO-ALIASES):
 
@@ -136,5 +136,5 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
 **Verify:**
 
 - `bin/console debug:router | grep <route>`
-- `symfony-service-detail --id=<FQCN>` - every `constructor` entry must resolve to a concrete service. A "no matching" / "multiple" autowiring failure surfaces earlier, when a kernel-booting `sylius_*` tool errors out after `sylius_cache_clear`.
+- `symfony-service-detail --id=<FQCN>` - every `arguments` entry must resolve to a concrete service. A "no matching" / "multiple" autowiring failure surfaces earlier, when a kernel-booting `sylius_*` tool errors out after `sylius_cache_clear`.
 - `sylius_routes_show --name=<route_name>`
