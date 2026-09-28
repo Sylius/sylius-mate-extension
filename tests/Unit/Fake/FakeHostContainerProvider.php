@@ -11,7 +11,6 @@ final class FakeHostContainerProvider implements HostContainerProvider
 {
     public function __construct(
         private readonly ContainerInterface $container,
-        private readonly ?string $rootDir = null,
     ) {
     }
 
@@ -22,6 +21,6 @@ final class FakeHostContainerProvider implements HostContainerProvider
 
     public function getRootDir(): string
     {
-        return $this->rootDir ?? (getcwd() ?: '.');
+        return \dirname(__DIR__, 3);
     }
 }

@@ -124,4 +124,64 @@ final class ComposerPackageResolver
     {
         return self::composerRoot($projectDir) . '/vendor';
     }
+
+    /**
+     * Namespaces from the host composer.json `autoload.psr-4`, trimmed of the
+     * trailing backslash, in declaration order.
+     *
+     * @return array<string, list<string>> namespace => paths
+     */
+    public static function psr4(string $projectDir): array
+    {
+        $raw = @file_get_contents($projectDir . '/composer.json');
+        if (false === $raw) {
+            return [];
+        }
+
+        try {
+            /** @var array<string, mixed> $composer */
+            $composer = json_decode($raw, true, 512, \JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return [];
+        }
+
+        $autoload = $composer['autoload'] ?? [];
+        $psr4 = \is_array($autoload) ? ($autoload['psr-4'] ?? []) : [];
+        if (!\is_array($psr4)) {
+            return [];
+        }
+
+        $map = [];
+        foreach ($psr4 as $namespace => $paths) {
+            if (!\is_string($namespace) || '' === $namespace) {
+                continue;
+            }
+
+            $map[rtrim($namespace, '\\')] = array_values(array_filter((array) $paths, \is_string(...)));
+        }
+
+        return $map;
+    }
+
+    /**
+     * psr-4 namespaces whose root directory holds a `Kernel.php` — the host
+     * app namespace candidates.
+     *
+     * @return list<string>
+     */
+    public static function kernelNamespaces(string $projectDir): array
+    {
+        $namespaces = [];
+        foreach (self::psr4($projectDir) as $namespace => $paths) {
+            foreach ($paths as $path) {
+                if (is_file(rtrim($projectDir . '/' . $path, '/') . '/Kernel.php')) {
+                    $namespaces[] = $namespace;
+
+                    break;
+                }
+            }
+        }
+
+        return $namespaces;
+    }
 }

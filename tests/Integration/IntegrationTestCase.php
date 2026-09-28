@@ -22,7 +22,7 @@ abstract class IntegrationTestCase extends TestCase
     protected static function host(): HostKernelProvider
     {
         if (null === self::$host) {
-            self::$host = new HostKernelProvider(Kernel::class);
+            self::$host = new HostKernelProvider(self::testApplicationDir(), Kernel::class);
         }
 
         return self::$host;

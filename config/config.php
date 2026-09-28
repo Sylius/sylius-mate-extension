@@ -43,7 +43,7 @@ return static function (ContainerConfigurator $configurator): void {
     $services = $configurator->services();
 
     $services->set(HostKernelProvider::class)
-        ->arg('$rootDir', param('mate.root_dir'))
+        ->args([param('mate.root_dir')])
         ->public()
     ;
     $services->set(HttpPackagistClient::class);
@@ -54,7 +54,7 @@ return static function (ContainerConfigurator $configurator): void {
 
     $tools = [
         ListResources::class => [service(HostKernelProvider::class)],
-        ResourceTemplate::class => [\dirname(__DIR__) . '/src/Scaffold', param('mate.root_dir')],
+        ResourceTemplate::class => [\dirname(__DIR__) . '/src/Scaffold', service(HostKernelProvider::class)],
         InspectResource::class => [service(HostKernelProvider::class)],
         VerifyMailerTemplate::class => [service(HostKernelProvider::class)],
         ListGrids::class => [service(HostKernelProvider::class)],
