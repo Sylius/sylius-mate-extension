@@ -296,4 +296,4 @@ Sibling controllers in `services.yaml` set `autowire: false`. This controller in
     tags: ['controller.service_arguments']
 ```
 
-**Why:** `_defaults` inheritance is opaque when neighboring defs override. Always explicit on manual defs in excluded dirs. `symfony-service-detail --id=<FQCN>` is the catch - every `constructor` entry must resolve.
+**Why:** `_defaults` inheritance is opaque when neighboring defs override. Always explicit on manual defs in excluded dirs. `symfony-service-detail --id=<FQCN>` is the catch - every `arguments` entry must resolve.

@@ -29,14 +29,14 @@ vendor/bin/mate tools:call sylius_cache_clear || exit 1
 vendor/bin/mate tools:call sylius_project_profile || exit 1
 service_detail() {
     if [ -d vendor/symfony/ai-symfony-mate-extension ]; then
-        vendor/bin/mate tools:call symfony-service-detail --id="$1" --format=json
+        vendor/bin/mate tools:call symfony-service-detail --id="$1"
     else
         bin/console debug:container "$1" --show-arguments
     fi
 }
 # MANDATORY: run for EVERY class added or modified (controllers, handlers,
 # listeners, form types, components, factories, services, etc.). Exact FQCN as id;
-# "Service ... not found" = not registered, `constructor` must list concrete services.
+# "Service ... not found" = not registered, `arguments` must list concrete services.
 # Form types extending AbstractResourceType MUST appear with the explicit
 # FQCN-keyed service - autowire is off for them.
 for fqcn in <every_new_or_modified_FQCN>; do

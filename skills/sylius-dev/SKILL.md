@@ -38,7 +38,7 @@ The `sylius_*` tools are Mate CLI tools - invoke each as `vendor/bin/mate tools:
 - **Domain event check.** Grep `vendor/sylius/*/src/**/SyliusEvents.php` for an existing event covering the trigger. No Mate tool for this - these are compile-time constants, not kernel state.
 - **Mailer code check.** Read `sylius_mailer.emails.*` keys from `config/packages/_sylius_mailer.yaml` for existing mailer codes. No dedicated Mate list tool; `sylius_mailer_verify_template` confirms the final code+template pair later (step 9.5).
 - `sylius_domain_list_grids` - closest existing grid to mirror.
-- **Container lookups** - the Symfony Mate bridge (`symfony/ai-symfony-mate-extension`) is optional for this extension; the `sylius/sylius-ai-dev-tools` pack installs it, `sylius_project_profile.symfony_mate_bridge` tells you. With the bridge: `symfony-services --query=<fragment>` (matches id or class), `symfony-service-detail --id=<exact id>` (returns `class`, `tags`, `calls`, `constructor`) - and then never `bin/console debug:container`. Without it: `bin/console debug:container <id> --show-arguments` / `--filter=<fragment>`. Every `symfony-service-detail` mention in this skill means "the container lookup for your setup".
+- **Container lookups** - the Symfony Mate bridge (`symfony/ai-symfony-mate-extension`) is optional for this extension; the `sylius/sylius-ai-dev-tools` pack installs it, `sylius_project_profile.symfony_mate_bridge` tells you. With the bridge: `symfony-services --query=<fragment>` (matches id or class), `symfony-service-detail --id=<exact id>` (returns `class`, `tags`, `calls`, `arguments`, definition flags incl. `autowired` / `autoconfigured`) - and then never `bin/console debug:container`. Class swallowed by a glob `exclude:` = "not found" in detail + a hit in `symfony-services --tag=container.excluded --query=<FQCN>`. Without it: `bin/console debug:container <id> --show-arguments` / `--filter=<fragment>`. Every `symfony-service-detail` mention in this skill means "the container lookup for your setup".
 
 Note the choices (hook name, event class, mailer code, grid to mirror) before moving on.
 
@@ -58,7 +58,7 @@ These apply to every step; each domain skill carries its own refuse-list on top.
 - ❌ **R-REPO-NAMESPACE.** Sub-namespacing classes pinned flat (`Repository`, `Factory`, `EventListener`, `Message`, `MessageHandler`) → flat; only `Entity\<Feature>\` and `Form\Type\<Feature>\` nest.
 - ❌ **R-NAMESPACE-FROM-COMPOSER.** Hardcoded `App\` in any scaffold → `app_namespace` from `sylius_project_profile` (composer `autoload.psr-4`).
 - ❌ **R-PLUGIN-AWARENESS.** Inventory / pricing / order / availability / channel logic designed without `sylius_installed_plugins` + `sylius_service_decorators` → check first; a decorator on the target service means the data may live elsewhere (MSI: stock in `InventorySourceStockInterface`, not `ProductVariant.onHand`).
-- ❌ **R-GLOB-EXCLUDED-DIR-AUTOWIRE.** Manual service def in a glob-excluded dir without explicit `autowire: true, autoconfigure: true` → always explicit; verify with `symfony-service-detail --id=<FQCN>`.
+- ❌ **R-GLOB-EXCLUDED-DIR-AUTOWIRE.** Manual service def in a glob-excluded dir without explicit `autowire: true, autoconfigure: true` → always explicit; verify with `symfony-service-detail --id=<FQCN>` (`autowired` and `autoconfigured` both `true`).
 
 ## Core Repo Aliases (R-CORE-REPO-ALIASES)
 

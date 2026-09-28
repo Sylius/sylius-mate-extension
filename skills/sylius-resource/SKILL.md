@@ -7,7 +7,7 @@ description: Register and wire a Sylius 2.x resource the idiomatic way - entity 
 
 Steps 2-4 and 6 of the `sylius-dev` build map: everything that turns a persisted thing into a Sylius resource with its mandatory kit. Read `sylius-dev` first for discovery and the cross-cutting rules (namespace from composer, interfaces not concretes, no EntityManager, DI file layout). Paths like `sylius-dev/reference/services.md` point at a sibling skill, installed next to this one (directory `<name>` in the extension, `mate-<name>` under `.agents/skills/`).
 
-**Mate tools used here:** `sylius_domain_resource_template`, `sylius_domain_list_grids`, `sylius_resource_inspect`, `sylius_grid_actions_audit`, `sylius_route_inspect`, `sylius_routes_show`, `sylius_services_yaml_profile` / `sylius_services_yaml_audit` / `sylius_services_yaml_patch_exclude`.
+**Mate tools used here:** `sylius_domain_resource_template`, `sylius_domain_list_grids`, `sylius_resource_inspect`, `sylius_grid_actions_audit`, `sylius_route_inspect`, `sylius_routes_show`, `sylius_services_yaml_patch_exclude`; registration checks via `symfony-service-detail` (see `sylius-dev`).
 
 ## Build (steps 2-4, 6)
 

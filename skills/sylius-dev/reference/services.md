@@ -65,7 +65,7 @@ services:
 
 Old `app.form.type.<x>` id + FQCN alias dual pattern is dropped - one trap door fewer.
 
-Verify: `symfony-service-detail --id=App\Form\Type\<Feature>\<X>Type` - every `constructor` entry resolves.
+Verify: `symfony-service-detail --id=App\Form\Type\<Feature>\<X>Type` - every `arguments` entry resolves.
 
 ## Core Sylius repository aliases (R-CORE-REPO-ALIASES)
 
