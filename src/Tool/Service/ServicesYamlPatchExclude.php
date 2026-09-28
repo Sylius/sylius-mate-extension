@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Service;
 
+use Sylius\MateExtension\Kernel\ComposerPackageResolver;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Kernel\HostProjectDir;
 use Sylius\MateExtension\Output\Envelope;
@@ -49,7 +50,7 @@ final class ServicesYamlPatchExclude
         }
 
         $body = (string) @file_get_contents($servicesYaml);
-        $namespace = $appNamespace ?? $this->detectAppNamespace($projectDir);
+        $namespace = $appNamespace ?? ComposerPackageResolver::kernelNamespaces($projectDir)[0] ?? 'App';
 
         $lines = preg_split('/\\r?\\n/', $body) ?: [];
 
@@ -151,40 +152,5 @@ final class ServicesYamlPatchExclude
         $envelope['app_namespace'] = $namespace;
 
         return $envelope;
-    }
-
-    private function detectAppNamespace(string $projectDir): string
-    {
-        $composerJson = $projectDir . '/composer.json';
-        if (!is_file($composerJson)) {
-            return 'App';
-        }
-
-        try {
-            /** @var array<string, mixed> $composer */
-            $composer = json_decode((string) file_get_contents($composerJson), true, 512, \JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
-            return 'App';
-        }
-
-        $autoload = $composer['autoload'] ?? [];
-        $psr4 = \is_array($autoload) ? ($autoload['psr-4'] ?? []) : [];
-        if (!\is_array($psr4)) {
-            return 'App';
-        }
-
-        foreach ($psr4 as $namespace => $paths) {
-            if (!\is_string($namespace) || '' === $namespace) {
-                continue;
-            }
-
-            foreach ((array) $paths as $path) {
-                if (\is_string($path) && is_file(rtrim($projectDir . '/' . $path, '/') . '/Kernel.php')) {
-                    return rtrim($namespace, '\\');
-                }
-            }
-        }
-
-        return 'App';
     }
 }

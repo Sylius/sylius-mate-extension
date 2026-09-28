@@ -18,4 +18,9 @@ final class FakeHostContainerProvider implements HostContainerProvider
     {
         return $this->container;
     }
+
+    public function getRootDir(): string
+    {
+        return \dirname(__DIR__, 3);
+    }
 }

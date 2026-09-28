@@ -36,12 +36,16 @@ use Sylius\MateExtension\Tool\Twig\RenderTemplate;
 use Sylius\MateExtension\Tool\Twig\VerifyFunction;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
+use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 
 return static function (ContainerConfigurator $configurator): void {
     $services = $configurator->services();
 
-    $services->set(HostKernelProvider::class)->public();
+    $services->set(HostKernelProvider::class)
+        ->args([param('mate.root_dir')])
+        ->public()
+    ;
     $services->set(HttpPackagistClient::class);
     $services->set(HookablesReader::class)
         ->args([service(HostKernelProvider::class)])
@@ -50,7 +54,7 @@ return static function (ContainerConfigurator $configurator): void {
 
     $tools = [
         ListResources::class => [service(HostKernelProvider::class)],
-        ResourceTemplate::class => [\dirname(__DIR__) . '/src/Scaffold'],
+        ResourceTemplate::class => [\dirname(__DIR__) . '/src/Scaffold', service(HostKernelProvider::class)],
         InspectResource::class => [service(HostKernelProvider::class)],
         VerifyMailerTemplate::class => [service(HostKernelProvider::class)],
         ListGrids::class => [service(HostKernelProvider::class)],

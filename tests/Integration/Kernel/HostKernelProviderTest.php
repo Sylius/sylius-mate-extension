@@ -34,7 +34,7 @@ final class HostKernelProviderTest extends IntegrationTestCase
         $_SERVER['MATE_HOST_KERNEL'] = Kernel::class;
 
         try {
-            $provider = new HostKernelProvider();
+            $provider = new HostKernelProvider(self::testApplicationDir());
             self::assertInstanceOf(Kernel::class, $provider->getKernel());
             $provider->shutdown();
         } finally {

@@ -21,6 +21,7 @@ final class HostKernelProvider implements HostContainerProvider
     private const FRESHNESS_CHECK_INTERVAL_SECONDS = 1.0;
 
     public function __construct(
+        private readonly string $rootDir,
         private readonly string $kernelClass = 'App\\Kernel',
         private readonly string $env = 'dev',
         private readonly bool $debug = true,
@@ -30,6 +31,11 @@ final class HostKernelProvider implements HostContainerProvider
     public function getContainer(): ContainerInterface
     {
         return $this->getKernel()->getContainer();
+    }
+
+    public function getRootDir(): string
+    {
+        return $this->rootDir;
     }
 
     public function getKernel(): KernelInterface
@@ -99,68 +105,13 @@ final class HostKernelProvider implements HostContainerProvider
             return $this->kernelClass;
         }
 
-        foreach ($this->discoverKernelCandidates() as $candidate) {
-            if (class_exists($candidate)) {
-                return $candidate;
+        foreach (ComposerPackageResolver::kernelNamespaces($this->rootDir) as $namespace) {
+            if (class_exists($namespace . '\\Kernel')) {
+                return $namespace . '\\Kernel';
             }
         }
 
         return $this->kernelClass;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function discoverKernelCandidates(): array
-    {
-        $cwd = getcwd();
-        if (false === $cwd) {
-            return [];
-        }
-
-        $composerJson = $cwd . '/composer.json';
-        if (!is_file($composerJson)) {
-            return [];
-        }
-
-        $raw = @file_get_contents($composerJson);
-        if (false === $raw) {
-            return [];
-        }
-
-        try {
-            /** @var array<string, mixed> $composer */
-            $composer = json_decode($raw, true, 512, \JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
-            return [];
-        }
-
-        $candidates = [];
-        $autoload = $composer['autoload'] ?? [];
-        $psr4 = \is_array($autoload) ? ($autoload['psr-4'] ?? []) : [];
-        if (!\is_array($psr4)) {
-            return [];
-        }
-
-        foreach ($psr4 as $namespace => $paths) {
-            if (!\is_string($namespace) || '' === $namespace) {
-                continue;
-            }
-
-            $paths = (array) $paths;
-            foreach ($paths as $path) {
-                if (!\is_string($path)) {
-                    continue;
-                }
-
-                $kernelFile = rtrim($cwd . '/' . $path, '/') . '/Kernel.php';
-                if (is_file($kernelFile)) {
-                    $candidates[] = rtrim($namespace, '\\') . '\\Kernel';
-                }
-            }
-        }
-
-        return $candidates;
     }
 
     private function rebootIfStale(): void

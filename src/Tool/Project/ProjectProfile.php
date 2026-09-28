@@ -36,7 +36,9 @@ final class ProjectProfile
     private function profile(): array
     {
         $projectDir = HostProjectDir::resolve($this->host);
-        $appNamespace = $this->detectAppNamespace($projectDir);
+        $appNamespace = ComposerPackageResolver::kernelNamespaces($projectDir)[0]
+            ?? array_key_first(ComposerPackageResolver::psr4($projectDir))
+            ?? 'App';
 
         $container = $this->host->getContainer();
         $isContainer = $container instanceof \Symfony\Component\DependencyInjection\Container;
@@ -97,58 +99,6 @@ final class ProjectProfile
         $value = $container->getParameter($name);
 
         return \is_string($value) ? $value : $default;
-    }
-
-    private function detectAppNamespace(string $projectDir): string
-    {
-        $composerJson = $projectDir . '/composer.json';
-        if (!is_file($composerJson)) {
-            return 'App';
-        }
-
-        $raw = @file_get_contents($composerJson);
-        if (false === $raw) {
-            return 'App';
-        }
-
-        try {
-            /** @var array<string, mixed> $composer */
-            $composer = json_decode($raw, true, 512, \JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
-            return 'App';
-        }
-
-        $autoload = $composer['autoload'] ?? [];
-        $psr4 = \is_array($autoload) ? ($autoload['psr-4'] ?? []) : [];
-        if (!\is_array($psr4)) {
-            return 'App';
-        }
-
-        foreach ($psr4 as $namespace => $paths) {
-            if (!\is_string($namespace) || '' === $namespace) {
-                continue;
-            }
-
-            $paths = (array) $paths;
-            foreach ($paths as $path) {
-                if (!\is_string($path)) {
-                    continue;
-                }
-
-                $kernelFile = rtrim($projectDir . '/' . $path, '/') . '/Kernel.php';
-                if (is_file($kernelFile)) {
-                    return rtrim($namespace, '\\');
-                }
-            }
-        }
-
-        foreach (array_keys($psr4) as $namespace) {
-            if (\is_string($namespace) && '' !== $namespace) {
-                return rtrim($namespace, '\\');
-            }
-        }
-
-        return 'App';
     }
 
     /**

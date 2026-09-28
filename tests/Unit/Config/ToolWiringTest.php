@@ -26,6 +26,8 @@ final class ToolWiringTest extends TestCase
         $root = \dirname(__DIR__, 3);
 
         $container = new ContainerBuilder();
+        // Set by Mate's ContainerFactory at runtime.
+        $container->setParameter('mate.root_dir', $root);
         (new PhpFileLoader($container, new FileLocator($root . '/config')))->load('config.php');
         $container->compile();
 

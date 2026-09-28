@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Sylius\MateExtension\Tests\Unit\Tool\Resource;
 
 use PHPUnit\Framework\TestCase;
+use Sylius\MateExtension\Tests\Unit\Fake\FakeHostContainerProvider;
 use Sylius\MateExtension\Tool\Resource\ResourceTemplate;
+use Symfony\Component\DependencyInjection\Container;
 
 final class ResourceTemplateTest extends TestCase
 {
@@ -13,7 +15,7 @@ final class ResourceTemplateTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tool = new ResourceTemplate(\dirname(__DIR__, 4) . '/src/Scaffold');
+        $this->tool = new ResourceTemplate(\dirname(__DIR__, 4) . '/src/Scaffold', new FakeHostContainerProvider(new Container()));
     }
 
     public function testRejectsInvalidAlias(): void

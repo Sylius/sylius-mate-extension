@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Resource;
 
+use Sylius\MateExtension\Kernel\ComposerPackageResolver;
+use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
 use Symfony\AI\Mate\Attribute\MateTool;
 
@@ -25,6 +27,7 @@ final class ResourceTemplate
 
     public function __construct(
         private readonly string $scaffoldDir,
+        private readonly HostContainerProvider $host,
     ) {
     }
 
@@ -48,7 +51,7 @@ final class ResourceTemplate
         array $core_repos = [],
         bool $with_listener = false,
     ): array {
-        $namespace = null !== $namespace && '' !== trim($namespace) ? $namespace : $this->detectAppNamespace();
+        $namespace = null !== $namespace && '' !== trim($namespace) ? $namespace : (ComposerPackageResolver::kernelNamespaces($this->host->getRootDir())[0] ?? 'App');
 
         if ('' === trim($alias) || !preg_match('/^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/', $alias)) {
             return Envelope::error(
@@ -298,45 +301,5 @@ final class ResourceTemplate
     private function aliasToTable(string $alias): string
     {
         return str_replace('.', '_', $alias);
-    }
-
-    private function detectAppNamespace(): string
-    {
-        $cwd = getcwd();
-        if (false === $cwd) {
-            return 'App';
-        }
-
-        $composerJson = $cwd . '/composer.json';
-        if (!is_file($composerJson)) {
-            return 'App';
-        }
-
-        try {
-            /** @var array<string, mixed> $composer */
-            $composer = json_decode((string) file_get_contents($composerJson), true, 512, \JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
-            return 'App';
-        }
-
-        $autoload = $composer['autoload'] ?? [];
-        $psr4 = \is_array($autoload) ? ($autoload['psr-4'] ?? []) : [];
-        if (!\is_array($psr4)) {
-            return 'App';
-        }
-
-        foreach ($psr4 as $ns => $paths) {
-            if (!\is_string($ns) || '' === $ns) {
-                continue;
-            }
-
-            foreach ((array) $paths as $path) {
-                if (\is_string($path) && is_file(rtrim($cwd . '/' . $path, '/') . '/Kernel.php')) {
-                    return rtrim($ns, '\\');
-                }
-            }
-        }
-
-        return 'App';
     }
 }
