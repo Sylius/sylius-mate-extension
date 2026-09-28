@@ -7,7 +7,7 @@ description: Prove a Sylius 2.x change works before calling it done - the verify
 
 Steps 10-11 of the `sylius-dev` build map - the definition of DONE for every Sylius change. Container lookups follow the `sylius-dev` contract: Symfony Mate bridge when installed (`symfony_mate_bridge` in the profile output), `bin/console debug:container` otherwise. Paths like `sylius-dev/reference/services.md` point at a sibling skill, installed next to this one (directory `<name>` in the extension, `mate-<name>` under `.agents/skills/`).
 
-**Mate tools used here:** `sylius_cache_clear` (mutating, the only allowed cache clear), `sylius_project_profile` (kernel-booting compile gate), `sylius_resource_inspect`, `sylius_routes_show`, `sylius_mailer_verify_template`, `sylius_hooks_find_for_template`, `sylius_email_capture_status` (after `symfony-dotenv-check` from the bridge), `sylius_admin_restock_via_http`, `sylius_playwright_recipe`.
+**Mate tools used here:** `sylius_cache_clear` (mutating, the only allowed cache clear), `sylius_project_profile` (kernel-booting compile gate), `sylius_resource_inspect`, `sylius_routes_show`, `sylius_mailer_verify_template`, `sylius_hooks_find_for_template`, `sylius_email_capture_status`, `sylius_admin_restock_via_http`, `sylius_playwright_recipe`.
 
 ## Gates (steps 10-11)
 

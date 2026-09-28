@@ -41,7 +41,7 @@ Behat - optional. Playwright acceptance (step 11) is the required acceptance gat
 **Verify:**
 
 - `sylius_resource_inspect --alias=<alias>` - classes and the factory signature as declared.
-- Then one lookup each confirms the compiled wiring (no bridge: `bin/console debug:container <id> --show-arguments`):
+- Then one lookup each confirms the compiled wiring:
   - `symfony-service-detail --id=app.repository.<alias>` - `class` = your repository, `arguments` = entity manager + `ClassMetadata` for `<AppNs>\Entity\<X>`.
   - `symfony-service-detail --id=app.factory.<alias>` - `class` = the configured factory; with a custom factory the first `arguments` entry must be the entity FQCN as a scalar (`string $className`). A service reference there = factory wired as a wrapper (R-NO-CUSTOM-FACTORY).
 - `bin/console debug:router | grep admin_<alias>`
