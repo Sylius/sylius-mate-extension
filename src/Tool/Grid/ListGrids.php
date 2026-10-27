@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Grid;
 
+use Sylius\MateExtension\Grid\GridDefinitionsReader;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
 use Symfony\AI\Mate\Attribute\MateTool;
 
 final class ListGrids
 {
-    private const PARAMETER = 'sylius.grids_definitions';
-
     public function __construct(
         private readonly HostContainerProvider $host,
     ) {
@@ -26,20 +25,13 @@ final class ListGrids
     )]
     public function __invoke(?string $name_prefix = null, int $limit = 50, ?string $cursor = null): array
     {
-        $container = $this->host->getContainer();
-        if (!$container instanceof \Symfony\Component\DependencyInjection\Container || !$container->hasParameter(self::PARAMETER)) {
-            return Envelope::empty(sprintf('Parameter "%s" is not set. SyliusGridBundle may not be enabled.', self::PARAMETER));
+        $definitions = GridDefinitionsReader::read($this->host->getContainer());
+        if (null === $definitions) {
+            return Envelope::empty(GridDefinitionsReader::unavailableMessage());
         }
-
-        /** @var array<string, array<string, mixed>> $definitions */
-        $definitions = $container->getParameter(self::PARAMETER);
 
         $items = [];
         foreach ($definitions as $name => $definition) {
-            if (!\is_string($name) || !\is_array($definition)) {
-                continue;
-            }
-
             if (null !== $name_prefix && !str_starts_with($name, $name_prefix)) {
                 continue;
             }

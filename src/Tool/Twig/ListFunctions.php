@@ -89,7 +89,7 @@ final class ListFunctions
             'kind' => $kind,
             'name' => $name,
             'origin' => CallableDescriber::describe($item->getCallable()),
-            'uri' => VerifyFunction::URI_PREFIX . $kind . '/' . $name,
+            'uri' => VerifyFunction::uri($kind, $name),
         ];
     }
 }

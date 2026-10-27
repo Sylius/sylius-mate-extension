@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Grid;
 
+use Sylius\MateExtension\Grid\GridDefinitionsReader;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
 use Symfony\AI\Mate\Attribute\MateTool;
 
 final class ActionsAudit
 {
-    private const PARAMETER = 'sylius.grids_definitions';
-
     private const ITEM_ONLY_TYPES = ['update', 'delete', 'show'];
 
     public function __construct(
@@ -40,13 +39,11 @@ final class ActionsAudit
      */
     private function audit(string $grid_name): array
     {
-        $container = $this->host->getContainer();
-        if (!$container instanceof \Symfony\Component\DependencyInjection\Container || !$container->hasParameter(self::PARAMETER)) {
-            return Envelope::error('grids_unavailable', 'Parameter "sylius.grids_definitions" is not set.');
+        $definitions = GridDefinitionsReader::read($this->host->getContainer());
+        if (null === $definitions) {
+            return Envelope::error('grids_unavailable', GridDefinitionsReader::unavailableMessage());
         }
 
-        /** @var array<string, array<string, mixed>> $definitions */
-        $definitions = $container->getParameter(self::PARAMETER);
         if (!isset($definitions[$grid_name])) {
             return Envelope::empty(sprintf('Grid "%s" is not registered. Call sylius_domain_list_grids to find it.', $grid_name));
         }

@@ -94,7 +94,17 @@ final class VerifyFunction
     )]
     public function read(string $kind, string $name): array
     {
-        return Envelope::resource(self::URI_PREFIX . $kind . '/' . $name, $this($name, $kind));
+        return Envelope::resource(self::URI_PREFIX . $kind . '/' . $name, $this(rawurldecode($name), $kind));
+    }
+
+    /**
+     * Twig names may contain characters that are not URI-safe (core tests
+     * such as "divisible by"); the name segment is percent-encoded so the URI
+     * stays valid and still matches the template's `[^/]+` placeholder.
+     */
+    public static function uri(string $kind, string $name): string
+    {
+        return self::URI_PREFIX . $kind . '/' . rawurlencode($name);
     }
 
     /**

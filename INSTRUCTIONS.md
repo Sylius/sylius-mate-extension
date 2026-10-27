@@ -50,7 +50,7 @@ Items returned by the list tools carry a `uri`; read one with `vendor/bin/mate r
 | `sylius://twig/<kind>/<name>` | `sylius_twig_list_functions` | `sylius_twig_function_verify` with `kind` |
 | `sylius://route/<name>` | `sylius_routes_show` (list mode) | `sylius_route_inspect` |
 
-The resource, grid and route payloads carry `links` to each other: a resource lists its grids and routes, a grid its resource and the routes rendering it, a route its resource and grid. Follow them instead of guessing names with prefix filters.
+The resource, grid and route payloads carry `links` to each other: a resource lists its grids and routes, a grid its resource and the routes rendering it, a route its resource and grid. Follow them instead of guessing names with prefix filters. Route links cover resources configured under `sylius_resource.resources` (routes calling `<app>.controller.<name>`); resources declared with `#[AsResource]` are listed with their default classes but get no route links, and a host whose router fails to load yields empty links rather than an error.
 
 ## Hard rules
 

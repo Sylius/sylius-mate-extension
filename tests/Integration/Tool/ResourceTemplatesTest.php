@@ -60,6 +60,14 @@ final class ResourceTemplatesTest extends IntegrationTestCase
         self::assertSame((new VerifyFunction(self::host()))('mate_test_greet', 'function'), $this->read(new VerifyFunction(self::host()), $uris[1]));
     }
 
+    public function testTwigNameWithSpacesIsPercentEncodedInTheUriAndReadBack(): void
+    {
+        $items = (new ListFunctions(self::host()))('divisible', 'test')['items'];
+
+        self::assertSame(['sylius://twig/test/divisible%20by'], array_column($items, 'uri'));
+        self::assertSame((new VerifyFunction(self::host()))('divisible by', 'test'), $this->read(new VerifyFunction(self::host()), $items[0]['uri']));
+    }
+
     public function testGridUriFromTheListReadsTheFullDefinition(): void
     {
         $uri = (new ListGrids(self::host()))('mate_test_')['items'][0]['uri'];
