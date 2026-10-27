@@ -7,10 +7,6 @@ namespace Sylius\MateExtension\Grid;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\DependencyInjection\Container;
 
-/**
- * SyliusGridBundle compiles every configured grid into the public
- * `sylius.grids_definitions` parameter; the tools read it from there.
- */
 final class GridDefinitionsReader
 {
     public const PARAMETER = 'sylius.grids_definitions';

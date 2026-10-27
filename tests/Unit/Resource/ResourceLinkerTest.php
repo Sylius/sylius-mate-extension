@@ -58,7 +58,6 @@ final class ResourceLinkerTest extends TestCase
         ));
 
         self::assertSame('sylius://resource/sylius.product', $linker->forGrid('sylius_admin_product')['resource']);
-        // No route decides: the first alias by name, deterministically.
         self::assertSame('sylius://resource/app.product', $linker->forGrid('app_product_report')['resource']);
     }
 

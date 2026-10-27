@@ -14,21 +14,6 @@ use Sylius\Resource\Metadata\MetadataInterface;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouterInterface;
 
-/**
- * Cross-links resources, grids and routes by their resource URIs.
- *
- * A route belongs to the resource whose ResourceController it calls
- * (`<app>.controller.<name>::…Action`, only when that alias is registered) and
- * to the grid named in its `_sylius.grid` default; a grid belongs to the
- * resource of the route rendering it, or else to the resource whose model is
- * its `driver.options.class`. Resources declared with `#[AsResource]` route
- * through the operation system instead of a `<app>.controller.<name>`
- * service, so they get no route links.
- *
- * Nothing is cached: the index is read from the current host container on
- * every call (parameter replays plus the router's own memoised collection),
- * so links never outlive a kernel reboot.
- */
 final class ResourceLinker
 {
     private const CONTROLLER_PATTERN = '/^([^.:]+)\.controller\.([^.:]+)::/';
@@ -189,10 +174,6 @@ final class ResourceLinker
     }
 
     /**
-     * Links are additive to the payloads: a host without a usable router
-     * (missing service, routing resource that fails to load — the situation
-     * the agent is diagnosing) yields no route links rather than an error.
-     *
      * @return array<string, Route>
      */
     private function routes(ContainerInterface $container): array

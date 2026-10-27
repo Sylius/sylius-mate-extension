@@ -22,9 +22,6 @@ use Twig\Error\RuntimeError;
  * walking the object graph rather than by property names, so decorated
  * renderers (e.g. the debug comment renderer) and constructor changes do not
  * matter.
- *
- * Nothing is cached: each read walks the current host container, so hookables
- * never outlive a kernel reboot. Every tool calls readAll() once.
  */
 final class HookablesReader
 {
