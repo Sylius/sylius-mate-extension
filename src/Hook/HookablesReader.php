@@ -22,17 +22,15 @@ use Twig\Error\RuntimeError;
  * walking the object graph rather than by property names, so decorated
  * renderers (e.g. the debug comment renderer) and constructor changes do not
  * matter.
+ *
+ * Nothing is cached: each read walks the current host container, so hookables
+ * never outlive a kernel reboot. Every tool calls readAll() once.
  */
 final class HookablesReader
 {
     private const SERVICE_ID = 'sylius_twig_hooks.registry.hookables';
 
     private const MAX_GRAPH_DEPTH = 5;
-
-    /** @var array<string, array<string, AbstractHookable>>|null */
-    private ?array $cache = null;
-
-    private bool $resolved = false;
 
     public function __construct(
         private readonly HostContainerProvider $host,
@@ -44,25 +42,20 @@ final class HookablesReader
      */
     public function readAll(): ?array
     {
-        if ($this->resolved) {
-            return $this->cache;
-        }
-
-        $this->resolved = true;
         $registry = $this->findRegistry();
         if (null === $registry) {
-            return $this->cache = null;
+            return null;
         }
 
         $reflection = new \ReflectionClass($registry);
         if (!$reflection->hasProperty('hookables')) {
-            return $this->cache = null;
+            return null;
         }
 
         /** @var array<string, array<string, AbstractHookable>> $value */
         $value = $reflection->getProperty('hookables')->getValue($registry);
 
-        return $this->cache = $value;
+        return $value;
     }
 
     private function findRegistry(): ?HookablesRegistry
