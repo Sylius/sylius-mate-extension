@@ -7,6 +7,7 @@ namespace Sylius\MateExtension\Tool\Twig;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\CallableDescriber;
 use Sylius\MateExtension\Output\Envelope;
+use Sylius\MateExtension\Resource\ResourceUri;
 use Symfony\AI\Mate\Attribute\MateTool;
 use Twig\Environment;
 use Twig\TwigFilter;
@@ -27,7 +28,7 @@ final class ListFunctions
      */
     #[MateTool(
         name: 'sylius_twig_list_functions',
-        description: 'List registered Twig functions, filters and tests with their origin extension. Filter by name prefix (e.g. "sylius_"). Use to verify a Twig helper exists before referencing it.',
+        description: 'List registered Twig functions, filters and tests with their origin extension. Filter by name prefix (e.g. "sylius_"). Use to verify a Twig helper exists before referencing it. Each item carries a "uri" readable with resources:read for its signature.',
     )]
     public function __invoke(?string $name_prefix = null, ?string $kind = null, int $limit = 100, ?string $cursor = null): array
     {
@@ -89,6 +90,7 @@ final class ListFunctions
             'kind' => $kind,
             'name' => $name,
             'origin' => CallableDescriber::describe($item->getCallable()),
+            'uri' => ResourceUri::build(VerifyFunction::URI_PREFIX, $kind, $name),
         ];
     }
 }

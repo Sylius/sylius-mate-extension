@@ -14,6 +14,7 @@ use Sylius\TwigHooks\Hookable\HookableComponent;
 use Sylius\TwigHooks\Hookable\HookableTemplate;
 use Sylius\TwigHooks\Hookable\Merger\HookableMerger;
 use Sylius\TwigHooks\Registry\HookablesRegistry;
+use Symfony\AI\Mate\Encoding\ResponseEncoder;
 use Symfony\Component\DependencyInjection\Container;
 
 final class HookToolsTest extends TestCase
@@ -33,6 +34,7 @@ final class HookToolsTest extends TestCase
         self::assertCount(2, $result['items']);
         $summary = $this->itemByName($result['items'], 'sylius_shop.product.show.content.info.summary');
         self::assertSame(2, $summary['hookable_count']);
+        self::assertSame('sylius://hook/sylius_shop.product.show.content.info.summary', $summary['uri']);
     }
 
     public function testListHooksFiltersByPrefix(): void
@@ -64,6 +66,19 @@ final class HookToolsTest extends TestCase
         self::assertSame(['high', 'low'], array_column($result['items'], 'name'));
         self::assertSame('template', $result['items'][0]['kind']);
         self::assertSame('high.twig', $result['items'][0]['template']);
+    }
+
+    public function testHookResourceReturnsTheSamePayloadAsTheTool(): void
+    {
+        $tool = new ListHookables($this->reader([
+            new HookableTemplate('hook', 'low', 'low.twig', priority: 10),
+            new HookableTemplate('hook', 'high', 'high.twig', priority: 100),
+        ]));
+
+        $resource = $tool->read('hook');
+
+        self::assertSame('sylius://hook/hook', $resource['uri']);
+        self::assertSame($tool('hook'), ResponseEncoder::decode($resource['text']));
     }
 
     public function testListHookablesRejectsEmptyName(): void

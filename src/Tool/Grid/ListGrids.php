@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tool\Grid;
 
+use Sylius\MateExtension\Grid\GridDefinitionsReader;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Sylius\MateExtension\Resource\ResourceUri;
 use Symfony\AI\Mate\Attribute\MateTool;
 
 final class ListGrids
 {
-    private const PARAMETER = 'sylius.grids_definitions';
-
     public function __construct(
         private readonly HostContainerProvider $host,
     ) {
@@ -22,24 +22,17 @@ final class ListGrids
      */
     #[MateTool(
         name: 'sylius_domain_list_grids',
-        description: 'List configured Sylius grids: name, driver, resource class, fields, filters, actions. Filter by name prefix (e.g. "sylius_admin_").',
+        description: 'List configured Sylius grids: name, driver, resource class, fields, filters, actions. Filter by name prefix (e.g. "sylius_admin_"). Each item carries a "uri" readable with resources:read for the full grid definition.',
     )]
     public function __invoke(?string $name_prefix = null, int $limit = 50, ?string $cursor = null): array
     {
-        $container = $this->host->getContainer();
-        if (!$container instanceof \Symfony\Component\DependencyInjection\Container || !$container->hasParameter(self::PARAMETER)) {
-            return Envelope::empty(sprintf('Parameter "%s" is not set. SyliusGridBundle may not be enabled.', self::PARAMETER));
+        $definitions = GridDefinitionsReader::read($this->host->getContainer());
+        if (null === $definitions) {
+            return Envelope::empty(GridDefinitionsReader::unavailableMessage());
         }
-
-        /** @var array<string, array<string, mixed>> $definitions */
-        $definitions = $container->getParameter(self::PARAMETER);
 
         $items = [];
         foreach ($definitions as $name => $definition) {
-            if (!\is_string($name) || !\is_array($definition)) {
-                continue;
-            }
-
             if (null !== $name_prefix && !str_starts_with($name, $name_prefix)) {
                 continue;
             }
@@ -52,6 +45,7 @@ final class ListGrids
                 'fields' => isset($definition['fields']) && \is_array($definition['fields']) ? array_keys($definition['fields']) : [],
                 'filters' => isset($definition['filters']) && \is_array($definition['filters']) ? array_keys($definition['filters']) : [],
                 'actions' => isset($definition['actions']) && \is_array($definition['actions']) ? array_keys($definition['actions']) : [],
+                'uri' => ResourceUri::build(GridDefinition::URI_PREFIX, $name),
             ];
         }
 

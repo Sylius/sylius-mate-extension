@@ -58,7 +58,10 @@ Tools are grouped by domain. Full reference in [INSTRUCTIONS.md](INSTRUCTIONS.md
 - **Project** — `sylius_project_profile`, `sylius_installed_plugins`, `sylius_service_decorators`, `sylius_plugin_compatibility`, `sylius_project_audit`
 - **Translation** — `sylius_translation_create`
 - **Admin / Playwright** — `sylius_admin_restock_via_http`, `sylius_playwright_recipe`
+
 - **Cache** — `sylius_cache_clear`
+
+The list tools also return a `uri` per item, readable with `vendor/bin/mate resources:read <uri>`: `sylius://resource/{alias}`, `sylius://grid/{name}`, `sylius://hook/{hook_name}`, `sylius://twig/{kind}/{name}`, `sylius://route/{name}`.
 
 Generic Symfony introspection is not duplicated here. Container lookups and profiler access come from [`symfony/ai-symfony-mate-extension`](https://github.com/symfony/ai-symfony-mate-extension) (`symfony-services` / `symfony-service-detail`, `symfony-dotenv-check`, `symfony-profiler-*` tools and resources). That bridge is **optional** for this extension — the `sylius/sylius-ai-dev-tools` pack installs both — and `sylius_project_profile` reports whether it is present as `symfony_mate_bridge`. The `sylius-dev` skill uses the bridge when it is there and falls back to `bin/console debug:container` when it is not.
 

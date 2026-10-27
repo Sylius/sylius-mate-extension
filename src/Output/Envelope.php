@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Output;
 
+use Symfony\AI\Mate\Encoding\ResponseEncoder;
+
 final class Envelope
 {
     public const SCHEMA_VERSION = '1.0.0';
@@ -57,6 +59,20 @@ final class Envelope
         return [
             'schema_version' => self::SCHEMA_VERSION,
             'error' => $error,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $envelope
+     *
+     * @return array{uri: string, mimeType: string, text: string}
+     */
+    public static function resource(string $uri, array $envelope): array
+    {
+        return [
+            'uri' => $uri,
+            'mimeType' => 'text/plain',
+            'text' => ResponseEncoder::encode($envelope),
         ];
     }
 

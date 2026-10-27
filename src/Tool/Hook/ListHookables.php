@@ -6,10 +6,14 @@ namespace Sylius\MateExtension\Tool\Hook;
 
 use Sylius\MateExtension\Hook\HookablesReader;
 use Sylius\MateExtension\Output\Envelope;
+use Sylius\MateExtension\Resource\ResourceUri;
+use Symfony\AI\Mate\Attribute\MateResourceTemplate;
 use Symfony\AI\Mate\Attribute\MateTool;
 
 final class ListHookables
 {
+    public const URI_PREFIX = 'sylius://hook/';
+
     public function __construct(
         private readonly HookablesReader $reader,
     ) {
@@ -48,5 +52,21 @@ final class ListHookables
         usort($items, static fn (array $a, array $b) => $b['priority'] <=> $a['priority']);
 
         return Envelope::items($items);
+    }
+
+    /**
+     * @return array{uri: string, mimeType: string, text: string}
+     */
+    #[MateResourceTemplate(
+        uriTemplate: self::URI_PREFIX . '{hook_name}',
+        name: 'sylius_hook',
+        description: 'Hookables attached to a Sylius TwigHook: name, template/component, priority, configuration. Same payload as sylius_hooks_list_hookables; take the URI from the "uri" field of sylius_hooks_list items.',
+        mimeType: 'text/plain',
+    )]
+    public function read(string $hook_name): array
+    {
+        $hook_name = ResourceUri::decode($hook_name);
+
+        return Envelope::resource(ResourceUri::build(self::URI_PREFIX, $hook_name), $this($hook_name));
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sylius\MateExtension\Tests\Integration\Tool\Route;
 
+use Sylius\MateExtension\Resource\ResourceLinker;
 use Sylius\MateExtension\Tests\Integration\IntegrationTestCase;
 use Sylius\MateExtension\Tool\Route\InspectRoute;
 
@@ -11,7 +12,7 @@ final class InspectRouteTest extends IntegrationTestCase
 {
     public function testFlagsDuplicatedPathSegment(): void
     {
-        $result = (new InspectRoute(self::host()))('mate_test_double_prefix');
+        $result = (new InspectRoute(self::host(), new ResourceLinker(self::host())))('mate_test_double_prefix');
 
         $route = $result['items'][0];
         self::assertSame('/mate-test/books/books/{id}', $route['path']);
@@ -23,7 +24,7 @@ final class InspectRouteTest extends IntegrationTestCase
 
     public function testCleanRouteHasNoWarnings(): void
     {
-        $result = (new InspectRoute(self::host()))('mate_test_ping');
+        $result = (new InspectRoute(self::host(), new ResourceLinker(self::host())))('mate_test_ping');
 
         $route = $result['items'][0];
         self::assertSame([], $route['duplicate_segments']);

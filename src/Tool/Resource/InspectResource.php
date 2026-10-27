@@ -6,14 +6,20 @@ namespace Sylius\MateExtension\Tool\Resource;
 
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Sylius\MateExtension\Resource\ResourceLinker;
 use Sylius\MateExtension\Resource\ResourceRegistryReader;
+use Sylius\MateExtension\Resource\ResourceUri;
 use Sylius\Resource\Model\ResourceInterface;
+use Symfony\AI\Mate\Attribute\MateResourceTemplate;
 use Symfony\AI\Mate\Attribute\MateTool;
 
 final class InspectResource
 {
+    public const URI_PREFIX = 'sylius://resource/';
+
     public function __construct(
         private readonly HostContainerProvider $host,
+        private readonly ResourceLinker $linker,
     ) {
     }
 
@@ -92,12 +98,29 @@ final class InspectResource
                     'form' => $metadata->getServiceId('form'),
                 ],
                 'warnings' => $warnings,
+                'links' => $this->linker->forResource($alias),
             ]],
             null,
             [] === $warnings
                 ? sprintf('Resource "%s" looks healthy.', $alias)
                 : sprintf('Resource "%s" has %d warning(s).', $alias, \count($warnings)),
         );
+    }
+
+    /**
+     * @return array{uri: string, mimeType: string, text: string}
+     */
+    #[MateResourceTemplate(
+        uriTemplate: self::URI_PREFIX . '{alias}',
+        name: 'sylius_resource',
+        description: 'Diagnostic for a registered Sylius Resource by alias. Same payload as sylius_resource_inspect; take the URI from the "uri" field of sylius_domain_list_resources items.',
+        mimeType: 'text/plain',
+    )]
+    public function read(string $alias): array
+    {
+        $alias = ResourceUri::decode($alias);
+
+        return Envelope::resource(ResourceUri::build(self::URI_PREFIX, $alias), $this($alias));
     }
 
     /**
