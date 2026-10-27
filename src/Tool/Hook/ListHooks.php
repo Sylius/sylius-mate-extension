@@ -20,7 +20,7 @@ final class ListHooks
      */
     #[MateTool(
         name: 'sylius_hooks_list',
-        description: 'List registered Sylius TwigHooks with hookable counts. Filter by name prefix (e.g. "sylius_shop.product.").',
+        description: 'List registered Sylius TwigHooks with hookable counts. Filter by name prefix (e.g. "sylius_shop.product."). Each item carries a "uri" readable with resources:read for the hook\'s hookables.',
     )]
     public function __invoke(?string $name_prefix = null, int $limit = 50, ?string $cursor = null): array
     {
@@ -38,6 +38,7 @@ final class ListHooks
             $items[] = [
                 'name' => $hookName,
                 'hookable_count' => \count($byName),
+                'uri' => ListHookables::URI_PREFIX . $hookName,
             ];
         }
 

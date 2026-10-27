@@ -17,7 +17,11 @@ final class HookToolsTest extends IntegrationTestCase
     {
         $result = (new ListHooks($this->reader()))('mate_test.');
 
-        self::assertSame([['name' => 'mate_test.page.content', 'hookable_count' => 2]], $result['items']);
+        self::assertSame([[
+            'name' => 'mate_test.page.content',
+            'hookable_count' => 2,
+            'uri' => 'sylius://hook/mate_test.page.content',
+        ]], $result['items']);
     }
 
     public function testListsHookablesSortedByPriorityWithTemplateMetadata(): void
