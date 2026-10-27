@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sylius\MateExtension\Tests\Integration\Tool;
 
 use Sylius\MateExtension\Hook\HookablesReader;
+use Sylius\MateExtension\Resource\ResourceLinker;
 use Sylius\MateExtension\Tests\Integration\IntegrationTestCase;
 use Sylius\MateExtension\Tests\TestApplication\Entity\Book;
 use Sylius\MateExtension\Tool\Grid\GridDefinition;
@@ -38,7 +39,7 @@ final class ResourceTemplatesTest extends IntegrationTestCase
         $uri = (new ListResources(self::host()))('mate_test.')['items'][0]['uri'];
 
         self::assertSame('sylius://resource/mate_test.book', $uri);
-        self::assertSame((new InspectResource(self::host()))('mate_test.book'), $this->read(new InspectResource(self::host()), $uri));
+        self::assertSame((new InspectResource(self::host(), new ResourceLinker(self::host())))('mate_test.book'), $this->read(new InspectResource(self::host(), new ResourceLinker(self::host())), $uri));
     }
 
     public function testRouteUriFromTheListReadsTheDiagnostic(): void
@@ -47,7 +48,7 @@ final class ResourceTemplatesTest extends IntegrationTestCase
         $uri = $items[0]['uri'];
 
         self::assertSame('sylius://route/mate_test_ping', $uri);
-        self::assertSame((new InspectRoute(self::host()))('mate_test_ping'), $this->read(new InspectRoute(self::host()), $uri));
+        self::assertSame((new InspectRoute(self::host(), new ResourceLinker(self::host())))('mate_test_ping'), $this->read(new InspectRoute(self::host(), new ResourceLinker(self::host())), $uri));
     }
 
     public function testTwigUriFromTheListReadsTheSignatureOfThatKind(): void
@@ -65,7 +66,7 @@ final class ResourceTemplatesTest extends IntegrationTestCase
 
         self::assertSame('sylius://grid/mate_test_book', $uri);
 
-        $grid = $this->read(new GridDefinition(self::host()), $uri)['items'][0];
+        $grid = $this->read(new GridDefinition(self::host(), new ResourceLinker(self::host())), $uri)['items'][0];
         self::assertSame('mate_test_book', $grid['name']);
         self::assertSame(Book::class, $grid['driver']['options']['class']);
         self::assertSame(['id', 'title'], array_keys($grid['fields']));
@@ -73,7 +74,7 @@ final class ResourceTemplatesTest extends IntegrationTestCase
 
     public function testUnknownGridIsReportedAsEmpty(): void
     {
-        $result = (new GridDefinition(self::host()))->describe('mate_test_missing');
+        $result = (new GridDefinition(self::host(), new ResourceLinker(self::host())))->describe('mate_test_missing');
 
         self::assertSame([], $result['items']);
         self::assertStringContainsString('sylius_domain_list_grids', $result['note']);

@@ -6,6 +6,7 @@ namespace Sylius\MateExtension\Tool\Resource;
 
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Sylius\MateExtension\Resource\ResourceLinker;
 use Sylius\MateExtension\Resource\ResourceRegistryReader;
 use Sylius\Resource\Model\ResourceInterface;
 use Symfony\AI\Mate\Attribute\MateResourceTemplate;
@@ -17,6 +18,7 @@ final class InspectResource
 
     public function __construct(
         private readonly HostContainerProvider $host,
+        private readonly ResourceLinker $linker,
     ) {
     }
 
@@ -95,6 +97,7 @@ final class InspectResource
                     'form' => $metadata->getServiceId('form'),
                 ],
                 'warnings' => $warnings,
+                'links' => $this->linker->forResource($alias),
             ]],
             null,
             [] === $warnings

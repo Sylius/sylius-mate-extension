@@ -50,6 +50,8 @@ Items returned by the list tools carry a `uri`; read one with `vendor/bin/mate r
 | `sylius://twig/<kind>/<name>` | `sylius_twig_list_functions` | `sylius_twig_function_verify` with `kind` |
 | `sylius://route/<name>` | `sylius_routes_show` (list mode) | `sylius_route_inspect` |
 
+The resource, grid and route payloads carry `links` to each other: a resource lists its grids and routes, a grid its resource and the routes rendering it, a route its resource and grid. Follow them instead of guessing names with prefix filters.
+
 ## Hard rules
 
 1. **Twig helpers**: never write `{{ sylius_x(...) }}` or `{% if foo is sylius_y %}` without first calling `sylius_twig_function_verify name="sylius_x"`. An `error.code=empty` or `items=[]` response means the helper does not exist; do not use it.

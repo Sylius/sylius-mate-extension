@@ -6,6 +6,7 @@ namespace Sylius\MateExtension\Tool\Route;
 
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Sylius\MateExtension\Resource\ResourceLinker;
 use Symfony\AI\Mate\Attribute\MateResourceTemplate;
 use Symfony\AI\Mate\Attribute\MateTool;
 use Symfony\Component\Routing\Route;
@@ -19,6 +20,7 @@ final class InspectRoute
 
     public function __construct(
         private readonly HostContainerProvider $host,
+        private readonly ResourceLinker $linker,
     ) {
     }
 
@@ -76,6 +78,7 @@ final class InspectRoute
                 'requirements' => $route->getRequirements(),
                 'duplicate_segments' => $duplicateSegments,
                 'warnings' => $warnings,
+                'links' => $this->linker->forRoute($route),
             ]],
             null,
             [] === $warnings

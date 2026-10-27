@@ -6,6 +6,7 @@ namespace Sylius\MateExtension\Tool\Grid;
 
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Sylius\MateExtension\Resource\ResourceLinker;
 use Symfony\AI\Mate\Attribute\MateResourceTemplate;
 use Symfony\Component\DependencyInjection\Container;
 
@@ -17,6 +18,7 @@ final class GridDefinition
 
     public function __construct(
         private readonly HostContainerProvider $host,
+        private readonly ResourceLinker $linker,
     ) {
     }
 
@@ -53,6 +55,6 @@ final class GridDefinition
             ));
         }
 
-        return Envelope::items([['name' => $name] + $definitions[$name]]);
+        return Envelope::items([['name' => $name] + $definitions[$name] + ['links' => $this->linker->forGrid($name, $definitions[$name])]]);
     }
 }

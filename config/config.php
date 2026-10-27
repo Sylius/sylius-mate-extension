@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Sylius\MateExtension\Hook\HookablesReader;
 use Sylius\MateExtension\Kernel\HostKernelProvider;
 use Sylius\MateExtension\Kernel\HttpPackagistClient;
+use Sylius\MateExtension\Resource\ResourceLinker;
 use Sylius\MateExtension\Tool\Admin\RestockViaHttp;
 use Sylius\MateExtension\Tool\Cache\CacheClear;
 use Sylius\MateExtension\Tool\Email\EmailTemplateSkeleton;
@@ -46,6 +47,9 @@ return static function (ContainerConfigurator $configurator): void {
         ->public()
     ;
     $services->set(HttpPackagistClient::class);
+    $services->set(ResourceLinker::class)
+        ->args([service(HostKernelProvider::class)])
+    ;
     $services->set(HookablesReader::class)
         ->args([service(HostKernelProvider::class)])
         ->public()
@@ -54,11 +58,11 @@ return static function (ContainerConfigurator $configurator): void {
     $tools = [
         ListResources::class => [service(HostKernelProvider::class)],
         ResourceTemplate::class => [\dirname(__DIR__) . '/src/Scaffold', service(HostKernelProvider::class)],
-        InspectResource::class => [service(HostKernelProvider::class)],
+        InspectResource::class => [service(HostKernelProvider::class), service(ResourceLinker::class)],
         VerifyMailerTemplate::class => [service(HostKernelProvider::class)],
         ListGrids::class => [service(HostKernelProvider::class)],
         ActionsAudit::class => [service(HostKernelProvider::class)],
-        GridDefinition::class => [service(HostKernelProvider::class)],
+        GridDefinition::class => [service(HostKernelProvider::class), service(ResourceLinker::class)],
         ListHooks::class => [service(HookablesReader::class)],
         FindHookForTemplate::class => [service(HookablesReader::class)],
         ListHookables::class => [service(HookablesReader::class)],
@@ -67,7 +71,7 @@ return static function (ContainerConfigurator $configurator): void {
         VerifyFunction::class => [service(HostKernelProvider::class)],
         RenderTemplate::class => [service(HostKernelProvider::class)],
         ShowRoute::class => [service(HostKernelProvider::class)],
-        InspectRoute::class => [service(HostKernelProvider::class)],
+        InspectRoute::class => [service(HostKernelProvider::class), service(ResourceLinker::class)],
         CacheClear::class => [service(HostKernelProvider::class)],
         MailerCaptureStatus::class => [service(HostKernelProvider::class)],
         RestockViaHttp::class => [service(HostKernelProvider::class)],
