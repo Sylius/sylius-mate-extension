@@ -7,6 +7,7 @@ namespace Sylius\MateExtension\Tool\Resource;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
 use Sylius\MateExtension\Resource\ResourceRegistryReader;
+use Sylius\MateExtension\Resource\ResourceUri;
 use Sylius\Resource\Metadata\MetadataInterface;
 use Symfony\AI\Mate\Attribute\MateTool;
 
@@ -58,7 +59,7 @@ final class ListResources
                 'driver' => $metadata->getDriver(),
                 'classes' => $this->extractClasses($metadata),
                 'templates_namespace' => $metadata->getTemplatesNamespace(),
-                'uri' => InspectResource::URI_PREFIX . $alias,
+                'uri' => ResourceUri::build(InspectResource::URI_PREFIX, $alias),
             ];
         }
 

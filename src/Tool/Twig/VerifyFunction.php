@@ -7,6 +7,7 @@ namespace Sylius\MateExtension\Tool\Twig;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\CallableDescriber;
 use Sylius\MateExtension\Output\Envelope;
+use Sylius\MateExtension\Resource\ResourceUri;
 use Symfony\AI\Mate\Attribute\MateResourceTemplate;
 use Symfony\AI\Mate\Attribute\MateTool;
 use Twig\Environment;
@@ -94,17 +95,10 @@ final class VerifyFunction
     )]
     public function read(string $kind, string $name): array
     {
-        return Envelope::resource(self::URI_PREFIX . $kind . '/' . $name, $this(rawurldecode($name), $kind));
-    }
+        $kind = ResourceUri::decode($kind);
+        $name = ResourceUri::decode($name);
 
-    /**
-     * Twig names may contain characters that are not URI-safe (core tests
-     * such as "divisible by"); the name segment is percent-encoded so the URI
-     * stays valid and still matches the template's `[^/]+` placeholder.
-     */
-    public static function uri(string $kind, string $name): string
-    {
-        return self::URI_PREFIX . $kind . '/' . rawurlencode($name);
+        return Envelope::resource(ResourceUri::build(self::URI_PREFIX, $kind, $name), $this($name, $kind));
     }
 
     /**

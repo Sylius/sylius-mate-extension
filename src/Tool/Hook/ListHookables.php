@@ -6,6 +6,7 @@ namespace Sylius\MateExtension\Tool\Hook;
 
 use Sylius\MateExtension\Hook\HookablesReader;
 use Sylius\MateExtension\Output\Envelope;
+use Sylius\MateExtension\Resource\ResourceUri;
 use Symfony\AI\Mate\Attribute\MateResourceTemplate;
 use Symfony\AI\Mate\Attribute\MateTool;
 
@@ -64,6 +65,8 @@ final class ListHookables
     )]
     public function read(string $hook_name): array
     {
-        return Envelope::resource(self::URI_PREFIX . $hook_name, $this($hook_name));
+        $hook_name = ResourceUri::decode($hook_name);
+
+        return Envelope::resource(ResourceUri::build(self::URI_PREFIX, $hook_name), $this($hook_name));
     }
 }

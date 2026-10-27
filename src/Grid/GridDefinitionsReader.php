@@ -24,13 +24,8 @@ final class GridDefinitionsReader
             return null;
         }
 
-        $raw = $container->getParameter(self::PARAMETER);
-        if (!\is_array($raw)) {
-            return null;
-        }
-
         $definitions = [];
-        foreach ($raw as $name => $definition) {
+        foreach ((array) $container->getParameter(self::PARAMETER) as $name => $definition) {
             if (\is_string($name) && \is_array($definition)) {
                 /** @var array<string, mixed> $definition */
                 $definitions[$name] = $definition;

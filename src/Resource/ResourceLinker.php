@@ -20,29 +20,18 @@ use Symfony\Component\Routing\RouterInterface;
  * A route belongs to the resource whose ResourceController it calls
  * (`<app>.controller.<name>::…Action`, only when that alias is registered) and
  * to the grid named in its `_sylius.grid` default; a grid belongs to the
- * resource whose model is its `driver.options.class`. Resources declared with
- * `#[AsResource]` route through the operation system instead of a
- * `<app>.controller.<name>` service, so they get no route links.
+ * resource of the route rendering it, or else to the resource whose model is
+ * its `driver.options.class`. Resources declared with `#[AsResource]` route
+ * through the operation system instead of a `<app>.controller.<name>`
+ * service, so they get no route links.
  *
- * The index is built once per host container and dropped as soon as
- * HostKernelProvider hands out another instance (reboot after a stale
- * container dump, shutdown), so links never outlive the registry they came from.
+ * Nothing is cached: the index is read from the current host container on
+ * every call (parameter replays plus the router's own memoised collection),
+ * so links never outlive a kernel reboot.
  */
 final class ResourceLinker
 {
     private const CONTROLLER_PATTERN = '/^([^.:]+)\.controller\.([^.:]+)::/';
-
-    private ?ContainerInterface $indexedContainer = null;
-
-    /**
-     * @var array{
-     *     models: array<string, string>,
-     *     grids: array<string, array<string, mixed>>,
-     *     route_aliases: array<string, string>,
-     *     route_grids: array<string, string>,
-     * }|null
-     */
-    private ?array $index = null;
 
     public function __construct(
         private readonly HostContainerProvider $host,
@@ -57,62 +46,45 @@ final class ResourceLinker
         $index = $this->index();
         $model = $index['models'][$alias] ?? null;
 
-        $grids = [];
-        foreach ($index['grids'] as $name => $definition) {
-            if (null !== $model && $this->gridClass($definition) === $model) {
-                $grids[] = GridDefinition::URI_PREFIX . $name;
-            }
-        }
-
-        $routes = [];
-        foreach ($index['route_aliases'] as $name => $routeAlias) {
-            if ($routeAlias === $alias) {
-                $routes[] = InspectRoute::URI_PREFIX . $name;
-            }
-        }
-
+        $grids = null === $model ? [] : array_keys($index['grid_classes'], $model, true);
+        $routes = array_keys($index['route_aliases'], $alias, true);
         sort($grids);
         sort($routes);
 
-        return ['grids' => $grids, 'routes' => $routes];
+        return [
+            'grids' => self::uris(GridDefinition::URI_PREFIX, $grids),
+            'routes' => self::uris(InspectRoute::URI_PREFIX, $routes),
+        ];
     }
 
     /**
-     * @param array<string, mixed> $definition
-     *
      * @return array{resource: ?string, routes: list<string>}
      */
-    public function forGrid(string $name, array $definition): array
+    public function forGrid(string $name): array
     {
         $index = $this->index();
 
-        $routes = [];
-        foreach ($index['route_grids'] as $routeName => $grid) {
-            if ($grid === $name) {
-                $routes[] = InspectRoute::URI_PREFIX . $routeName;
-            }
-        }
+        $routes = array_keys($index['route_grids'], $name, true);
         sort($routes);
 
-        $class = $this->gridClass($definition);
-        $aliases = null === $class ? [] : array_keys($index['models'], $class, true);
-        sort($aliases);
-
-        // Several aliases may share one model class (a plugin re-registering a
-        // core resource under its own prefix): the alias whose routes render
-        // this grid wins, otherwise the first alias by name.
-        $alias = $aliases[0] ?? null;
-        foreach ($routes as $routeUri) {
-            $routeAlias = $index['route_aliases'][substr($routeUri, \strlen(InspectRoute::URI_PREFIX))] ?? null;
-            if (null !== $routeAlias && \in_array($routeAlias, $aliases, true)) {
-                $alias = $routeAlias;
+        $alias = null;
+        foreach ($routes as $route) {
+            if (isset($index['route_aliases'][$route])) {
+                $alias = $index['route_aliases'][$route];
                 break;
             }
         }
 
+        if (null === $alias) {
+            $class = $index['grid_classes'][$name] ?? null;
+            $aliases = null === $class ? [] : array_keys($index['models'], $class, true);
+            sort($aliases);
+            $alias = $aliases[0] ?? null;
+        }
+
         return [
-            'resource' => null === $alias ? null : InspectResource::URI_PREFIX . $alias,
-            'routes' => $routes,
+            'resource' => null === $alias ? null : ResourceUri::build(InspectResource::URI_PREFIX, $alias),
+            'routes' => self::uris(InspectRoute::URI_PREFIX, $routes),
         ];
     }
 
@@ -126,9 +98,19 @@ final class ResourceLinker
         $grid = $this->gridOf($route);
 
         return [
-            'resource' => null === $alias ? null : InspectResource::URI_PREFIX . $alias,
-            'grid' => null !== $grid && isset($index['grids'][$grid]) ? GridDefinition::URI_PREFIX . $grid : null,
+            'resource' => null === $alias ? null : ResourceUri::build(InspectResource::URI_PREFIX, $alias),
+            'grid' => null !== $grid && \array_key_exists($grid, $index['grid_classes']) ? ResourceUri::build(GridDefinition::URI_PREFIX, $grid) : null,
         ];
+    }
+
+    /**
+     * @param list<string> $names
+     *
+     * @return list<string>
+     */
+    private static function uris(string $prefix, array $names): array
+    {
+        return array_map(static fn (string $name): string => ResourceUri::build($prefix, $name), $names);
     }
 
     /**
@@ -168,7 +150,7 @@ final class ResourceLinker
     /**
      * @return array{
      *     models: array<string, string>,
-     *     grids: array<string, array<string, mixed>>,
+     *     grid_classes: array<string, ?string>,
      *     route_aliases: array<string, string>,
      *     route_grids: array<string, string>,
      * }
@@ -176,9 +158,6 @@ final class ResourceLinker
     private function index(): array
     {
         $container = $this->host->getContainer();
-        if (null !== $this->index && $container === $this->indexedContainer) {
-            return $this->index;
-        }
 
         $models = [];
         foreach (ResourceRegistryReader::read($container)?->getAll() ?? [] as $metadata) {
@@ -201,11 +180,9 @@ final class ResourceLinker
             }
         }
 
-        $this->indexedContainer = $container;
-
-        return $this->index = [
+        return [
             'models' => $models,
-            'grids' => GridDefinitionsReader::read($container) ?? [],
+            'grid_classes' => array_map($this->gridClass(...), GridDefinitionsReader::read($container) ?? []),
             'route_aliases' => $routeAliases,
             'route_grids' => $routeGrids,
         ];

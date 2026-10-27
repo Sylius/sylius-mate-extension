@@ -8,6 +8,7 @@ use Sylius\MateExtension\Grid\GridDefinitionsReader;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
 use Sylius\MateExtension\Resource\ResourceLinker;
+use Sylius\MateExtension\Resource\ResourceUri;
 use Symfony\AI\Mate\Attribute\MateResourceTemplate;
 
 final class GridDefinition
@@ -31,7 +32,9 @@ final class GridDefinition
     )]
     public function read(string $name): array
     {
-        return Envelope::resource(self::URI_PREFIX . $name, $this->describe($name));
+        $name = ResourceUri::decode($name);
+
+        return Envelope::resource(ResourceUri::build(self::URI_PREFIX, $name), $this->describe($name));
     }
 
     /**
@@ -51,6 +54,6 @@ final class GridDefinition
             ));
         }
 
-        return Envelope::items([['name' => $name] + $definitions[$name] + ['links' => $this->linker->forGrid($name, $definitions[$name])]]);
+        return Envelope::items([['name' => $name] + $definitions[$name] + ['links' => $this->linker->forGrid($name)]]);
     }
 }

@@ -7,6 +7,7 @@ namespace Sylius\MateExtension\Tool\Route;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
 use Sylius\MateExtension\Resource\ResourceLinker;
+use Sylius\MateExtension\Resource\ResourceUri;
 use Symfony\AI\Mate\Attribute\MateResourceTemplate;
 use Symfony\AI\Mate\Attribute\MateTool;
 use Symfony\Component\Routing\Route;
@@ -98,7 +99,9 @@ final class InspectRoute
     )]
     public function read(string $name): array
     {
-        return Envelope::resource(self::URI_PREFIX . $name, $this($name));
+        $name = ResourceUri::decode($name);
+
+        return Envelope::resource(ResourceUri::build(self::URI_PREFIX, $name), $this($name));
     }
 
     /**

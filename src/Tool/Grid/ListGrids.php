@@ -7,6 +7,7 @@ namespace Sylius\MateExtension\Tool\Grid;
 use Sylius\MateExtension\Grid\GridDefinitionsReader;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Sylius\MateExtension\Resource\ResourceUri;
 use Symfony\AI\Mate\Attribute\MateTool;
 
 final class ListGrids
@@ -44,7 +45,7 @@ final class ListGrids
                 'fields' => isset($definition['fields']) && \is_array($definition['fields']) ? array_keys($definition['fields']) : [],
                 'filters' => isset($definition['filters']) && \is_array($definition['filters']) ? array_keys($definition['filters']) : [],
                 'actions' => isset($definition['actions']) && \is_array($definition['actions']) ? array_keys($definition['actions']) : [],
-                'uri' => GridDefinition::URI_PREFIX . $name,
+                'uri' => ResourceUri::build(GridDefinition::URI_PREFIX, $name),
             ];
         }
 

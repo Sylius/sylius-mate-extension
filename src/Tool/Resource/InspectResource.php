@@ -8,6 +8,7 @@ use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
 use Sylius\MateExtension\Resource\ResourceLinker;
 use Sylius\MateExtension\Resource\ResourceRegistryReader;
+use Sylius\MateExtension\Resource\ResourceUri;
 use Sylius\Resource\Model\ResourceInterface;
 use Symfony\AI\Mate\Attribute\MateResourceTemplate;
 use Symfony\AI\Mate\Attribute\MateTool;
@@ -117,7 +118,9 @@ final class InspectResource
     )]
     public function read(string $alias): array
     {
-        return Envelope::resource(self::URI_PREFIX . $alias, $this($alias));
+        $alias = ResourceUri::decode($alias);
+
+        return Envelope::resource(ResourceUri::build(self::URI_PREFIX, $alias), $this($alias));
     }
 
     /**

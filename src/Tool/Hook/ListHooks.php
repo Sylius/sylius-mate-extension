@@ -6,6 +6,7 @@ namespace Sylius\MateExtension\Tool\Hook;
 
 use Sylius\MateExtension\Hook\HookablesReader;
 use Sylius\MateExtension\Output\Envelope;
+use Sylius\MateExtension\Resource\ResourceUri;
 use Symfony\AI\Mate\Attribute\MateTool;
 
 final class ListHooks
@@ -38,7 +39,7 @@ final class ListHooks
             $items[] = [
                 'name' => $hookName,
                 'hookable_count' => \count($byName),
-                'uri' => ListHookables::URI_PREFIX . $hookName,
+                'uri' => ResourceUri::build(ListHookables::URI_PREFIX, $hookName),
             ];
         }
 

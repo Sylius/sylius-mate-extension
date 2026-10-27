@@ -7,6 +7,7 @@ namespace Sylius\MateExtension\Tool\Twig;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\CallableDescriber;
 use Sylius\MateExtension\Output\Envelope;
+use Sylius\MateExtension\Resource\ResourceUri;
 use Symfony\AI\Mate\Attribute\MateTool;
 use Twig\Environment;
 use Twig\TwigFilter;
@@ -89,7 +90,7 @@ final class ListFunctions
             'kind' => $kind,
             'name' => $name,
             'origin' => CallableDescriber::describe($item->getCallable()),
-            'uri' => VerifyFunction::uri($kind, $name),
+            'uri' => ResourceUri::build(VerifyFunction::URI_PREFIX, $kind, $name),
         ];
     }
 }

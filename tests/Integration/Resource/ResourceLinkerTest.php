@@ -6,7 +6,6 @@ namespace Sylius\MateExtension\Tests\Integration\Resource;
 
 use Sylius\MateExtension\Resource\ResourceLinker;
 use Sylius\MateExtension\Tests\Integration\IntegrationTestCase;
-use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouterInterface;
 use Webmozart\Assert\Assert;
@@ -32,7 +31,7 @@ final class ResourceLinkerTest extends IntegrationTestCase
 
     public function testLinksGridBackToItsResourceAndIndexRoute(): void
     {
-        $links = $this->linker()->forGrid('sylius_admin_product', $this->gridDefinition('sylius_admin_product'));
+        $links = $this->linker()->forGrid('sylius_admin_product');
 
         self::assertSame('sylius://resource/sylius.product', $links['resource']);
         self::assertContains('sylius://route/sylius_admin_product_index', $links['routes']);
@@ -62,20 +61,6 @@ final class ResourceLinkerTest extends IntegrationTestCase
     private function linker(): ResourceLinker
     {
         return new ResourceLinker(self::host());
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function gridDefinition(string $name): array
-    {
-        $container = self::host()->getContainer();
-        Assert::isInstanceOf($container, Container::class);
-        $definitions = $container->getParameter('sylius.grids_definitions');
-        Assert::isArray($definitions);
-        Assert::isArray($definitions[$name]);
-
-        return $definitions[$name];
     }
 
     private function route(string $name): Route

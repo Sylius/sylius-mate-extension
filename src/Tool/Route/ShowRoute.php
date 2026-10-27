@@ -6,6 +6,7 @@ namespace Sylius\MateExtension\Tool\Route;
 
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Sylius\MateExtension\Resource\ResourceUri;
 use Symfony\AI\Mate\Attribute\MateTool;
 use Symfony\Component\Routing\RouterInterface;
 
@@ -88,7 +89,7 @@ final class ShowRoute
             'host' => $route->getHost(),
             'defaults' => array_diff_key($defaults, ['_controller' => true]),
             'requirements' => $route->getRequirements(),
-            'uri' => InspectRoute::URI_PREFIX . $name,
+            'uri' => ResourceUri::build(InspectRoute::URI_PREFIX, $name),
         ];
     }
 
