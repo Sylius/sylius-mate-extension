@@ -23,7 +23,7 @@ final class ShowRoute
      */
     #[MateTool(
         name: 'sylius_routes_show',
-        description: 'Resolve a Symfony route by name and return controller, action, path, methods and defaults. Use to verify any route referenced from code or templates actually exists. If "name" is omitted, lists routes whose name contains the optional "name_prefix" filter.',
+        description: 'Resolve a Symfony route by name and return controller, action, path, methods and defaults. Use to verify any route referenced from code or templates actually exists. If "name" is omitted, lists routes whose name starts with the optional "name_prefix" filter. Each item carries a "uri" readable with resources:read for the route diagnostic.',
     )]
     public function __invoke(?string $name = null, ?string $name_prefix = null, int $limit = 50, ?string $cursor = null): array
     {
@@ -88,6 +88,7 @@ final class ShowRoute
             'host' => $route->getHost(),
             'defaults' => array_diff_key($defaults, ['_controller' => true]),
             'requirements' => $route->getRequirements(),
+            'uri' => InspectRoute::URI_PREFIX . $name,
         ];
     }
 

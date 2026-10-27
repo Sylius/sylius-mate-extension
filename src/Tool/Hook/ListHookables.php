@@ -8,7 +8,6 @@ use Sylius\MateExtension\Hook\HookablesReader;
 use Sylius\MateExtension\Output\Envelope;
 use Symfony\AI\Mate\Attribute\MateResourceTemplate;
 use Symfony\AI\Mate\Attribute\MateTool;
-use Symfony\AI\Mate\Encoding\ResponseEncoder;
 
 final class ListHookables
 {
@@ -65,10 +64,6 @@ final class ListHookables
     )]
     public function read(string $hook_name): array
     {
-        return [
-            'uri' => self::URI_PREFIX . $hook_name,
-            'mimeType' => 'text/plain',
-            'text' => ResponseEncoder::encode($this($hook_name)),
-        ];
+        return Envelope::resource(self::URI_PREFIX . $hook_name, $this($hook_name));
     }
 }

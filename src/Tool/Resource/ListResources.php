@@ -22,7 +22,7 @@ final class ListResources
      */
     #[MateTool(
         name: 'sylius_domain_list_resources',
-        description: 'List all registered Sylius resources (alias, model, interface, repository, factory, form). Filter by alias prefix.',
+        description: 'List all registered Sylius resources (alias, model, interface, repository, factory, form). Filter by alias prefix. Each item carries a "uri" readable with resources:read for the resource diagnostic.',
     )]
     public function __invoke(?string $alias_prefix = null, int $limit = 50, ?string $cursor = null): array
     {
@@ -58,6 +58,7 @@ final class ListResources
                 'driver' => $metadata->getDriver(),
                 'classes' => $this->extractClasses($metadata),
                 'templates_namespace' => $metadata->getTemplatesNamespace(),
+                'uri' => InspectResource::URI_PREFIX . $alias,
             ];
         }
 

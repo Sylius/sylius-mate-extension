@@ -7,7 +7,7 @@ description: Place UI on Sylius 2.x shop and admin pages through Twig Hooks inst
 
 Step 5 of the `sylius-dev` build map. Read `sylius-dev` first for discovery (`sylius_hooks_find_for_template`, `sylius_hooks_resolve_for_visibility`) and the cross-cutting rules. Paths like `sylius-dev/reference/services.md` point at a sibling skill, installed next to this one (directory `<name>` in the extension, `mate-<name>` under `.agents/skills/`).
 
-**Mate tools used here:** `sylius_hooks_list` (each item's `uri` → `vendor/bin/mate resources:read sylius://hook/<hook_name>` for its hookables), `sylius_hooks_find_for_template`, `sylius_hooks_list_hookables`, `sylius_hooks_resolve_for_visibility`, `sylius_twig_list_functions`, `sylius_twig_function_verify` (**mandatory** before referencing any `sylius_*` Twig function), `sylius_test_render_template`.
+**Mate tools used here:** `sylius_hooks_list` (each item's `uri` reads its hookables via `vendor/bin/mate resources:read <uri>`), `sylius_hooks_find_for_template`, `sylius_hooks_list_hookables`, `sylius_hooks_resolve_for_visibility`, `sylius_twig_list_functions`, `sylius_twig_function_verify` (**mandatory** before referencing any `sylius_*` Twig function), `sylius_test_render_template`.
 
 ## Build (step 5)
 

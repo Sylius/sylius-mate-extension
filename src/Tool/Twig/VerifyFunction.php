@@ -7,6 +7,7 @@ namespace Sylius\MateExtension\Tool\Twig;
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\CallableDescriber;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateResourceTemplate;
 use Symfony\AI\Mate\Attribute\MateTool;
 use Twig\Environment;
 use Twig\TwigFilter;
@@ -15,6 +16,8 @@ use Twig\TwigTest;
 
 final class VerifyFunction
 {
+    public const URI_PREFIX = 'sylius://twig/';
+
     private const SERVICE_ID = 'twig';
 
     public function __construct(
@@ -78,6 +81,20 @@ final class VerifyFunction
         }
 
         return Envelope::items($matches);
+    }
+
+    /**
+     * @return array{uri: string, mimeType: string, text: string}
+     */
+    #[MateResourceTemplate(
+        uriTemplate: self::URI_PREFIX . '{kind}/{name}',
+        name: 'sylius_twig_callable',
+        description: 'Twig function, filter or test by kind and exact name: origin class and reflected signature. Same payload as sylius_twig_function_verify; take the URI from the "uri" field of sylius_twig_list_functions items.',
+        mimeType: 'text/plain',
+    )]
+    public function read(string $kind, string $name): array
+    {
+        return Envelope::resource(self::URI_PREFIX . $kind . '/' . $name, $this($name, $kind));
     }
 
     /**

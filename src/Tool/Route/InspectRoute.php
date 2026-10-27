@@ -6,12 +6,15 @@ namespace Sylius\MateExtension\Tool\Route;
 
 use Sylius\MateExtension\Kernel\HostContainerProvider;
 use Sylius\MateExtension\Output\Envelope;
+use Symfony\AI\Mate\Attribute\MateResourceTemplate;
 use Symfony\AI\Mate\Attribute\MateTool;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouterInterface;
 
 final class InspectRoute
 {
+    public const URI_PREFIX = 'sylius://route/';
+
     private const SERVICE_ID = 'router';
 
     public function __construct(
@@ -79,6 +82,20 @@ final class InspectRoute
                 ? sprintf('Route "%s" looks clean.', $name)
                 : sprintf('Route "%s" has %d warning(s) — see warnings field.', $name, \count($warnings)),
         );
+    }
+
+    /**
+     * @return array{uri: string, mimeType: string, text: string}
+     */
+    #[MateResourceTemplate(
+        uriTemplate: self::URI_PREFIX . '{name}',
+        name: 'sylius_route',
+        description: 'Diagnostic for a single Symfony route by name. Same payload as sylius_route_inspect; take the URI from the "uri" field of sylius_routes_show list items.',
+        mimeType: 'text/plain',
+    )]
+    public function read(string $name): array
+    {
+        return Envelope::resource(self::URI_PREFIX . $name, $this($name));
     }
 
     /**
