@@ -9,7 +9,7 @@ Step numbers follow the `sylius-dev` build map; hard rules and their rationale a
 **Mate tool calls:**
 
 - `sylius_domain_resource_template` - entity/repo/factory/form scaffold shape, including an admin grid yaml stub (no separate grid-template call needed).
-- `sylius_domain_list_grids` - mirror the closest existing grid's fields/filters/actions onto that stub.
+- `sylius_domain_list_grids` - find the closest existing grid, then `vendor/bin/mate resources:read <uri>` on its `uri` for the full definition (field/filter/action options) to mirror onto that stub.
 
 **Mandatory output:**
 

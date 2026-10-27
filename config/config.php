@@ -9,6 +9,7 @@ use Sylius\MateExtension\Tool\Admin\RestockViaHttp;
 use Sylius\MateExtension\Tool\Cache\CacheClear;
 use Sylius\MateExtension\Tool\Email\EmailTemplateSkeleton;
 use Sylius\MateExtension\Tool\Grid\ActionsAudit;
+use Sylius\MateExtension\Tool\Grid\GridDefinition;
 use Sylius\MateExtension\Tool\Grid\ListGrids;
 use Sylius\MateExtension\Tool\Hook\FindHookForTemplate;
 use Sylius\MateExtension\Tool\Hook\ListHookables;
@@ -57,6 +58,7 @@ return static function (ContainerConfigurator $configurator): void {
         VerifyMailerTemplate::class => [service(HostKernelProvider::class)],
         ListGrids::class => [service(HostKernelProvider::class)],
         ActionsAudit::class => [service(HostKernelProvider::class)],
+        GridDefinition::class => [service(HostKernelProvider::class)],
         ListHooks::class => [service(HookablesReader::class)],
         FindHookForTemplate::class => [service(HookablesReader::class)],
         ListHookables::class => [service(HookablesReader::class)],

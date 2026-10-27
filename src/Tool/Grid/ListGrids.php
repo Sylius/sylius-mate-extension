@@ -22,7 +22,7 @@ final class ListGrids
      */
     #[MateTool(
         name: 'sylius_domain_list_grids',
-        description: 'List configured Sylius grids: name, driver, resource class, fields, filters, actions. Filter by name prefix (e.g. "sylius_admin_").',
+        description: 'List configured Sylius grids: name, driver, resource class, fields, filters, actions. Filter by name prefix (e.g. "sylius_admin_"). Each item carries a "uri" readable with resources:read for the full grid definition.',
     )]
     public function __invoke(?string $name_prefix = null, int $limit = 50, ?string $cursor = null): array
     {
@@ -52,6 +52,7 @@ final class ListGrids
                 'fields' => isset($definition['fields']) && \is_array($definition['fields']) ? array_keys($definition['fields']) : [],
                 'filters' => isset($definition['filters']) && \is_array($definition['filters']) ? array_keys($definition['filters']) : [],
                 'actions' => isset($definition['actions']) && \is_array($definition['actions']) ? array_keys($definition['actions']) : [],
+                'uri' => GridDefinition::URI_PREFIX . $name,
             ];
         }
 

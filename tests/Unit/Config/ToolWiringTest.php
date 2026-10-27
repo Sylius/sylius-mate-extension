@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sylius\MateExtension\Tests\Unit\Config;
 
 use PHPUnit\Framework\TestCase;
+use Symfony\AI\Mate\Attribute\MateResourceTemplate;
 use Symfony\AI\Mate\Attribute\MateTool;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -16,12 +17,12 @@ use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
  * Mate 0.13 discovery auto-registers unwired handler classes with plain
  * autowiring, but this extension deliberately wires every tool explicitly
  * (deterministic constructor arguments, no reliance on autowiring being able
- * to resolve them) — so every #[MateTool] class still needs an explicit
+ * to resolve them) — so every #[MateTool] / #[MateResourceTemplate] class still needs an explicit
  * $services->set() in config.php, and this test keeps that invariant.
  */
 final class ToolWiringTest extends TestCase
 {
-    public function testEveryMateToolClassIsRegisteredAndInstantiable(): void
+    public function testEveryMateHandlerClassIsRegisteredAndInstantiable(): void
     {
         $root = \dirname(__DIR__, 3);
 
@@ -32,7 +33,7 @@ final class ToolWiringTest extends TestCase
         $container->compile();
 
         $missing = [];
-        foreach ($this->findMateToolClasses($root . '/src/Tool') as $class) {
+        foreach ($this->findMateHandlerClasses($root . '/src/Tool') as $class) {
             if (!$container->has($class)) {
                 $missing[] = $class;
 
@@ -47,7 +48,7 @@ final class ToolWiringTest extends TestCase
         }
 
         self::assertSame([], $missing, sprintf(
-            "The following #[MateTool] class(es) exist but aren't wired in config/config.php:\n- %s",
+            "The following Mate handler class(es) exist but aren't wired in config/config.php:\n- %s",
             implode("\n- ", $missing),
         ));
     }
@@ -55,7 +56,7 @@ final class ToolWiringTest extends TestCase
     /**
      * @return list<class-string>
      */
-    private function findMateToolClasses(string $toolDir): array
+    private function findMateHandlerClasses(string $toolDir): array
     {
         $classes = [];
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($toolDir, \FilesystemIterator::SKIP_DOTS));
@@ -72,7 +73,7 @@ final class ToolWiringTest extends TestCase
 
             $reflection = new \ReflectionClass($class);
             foreach ($reflection->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-                if ([] !== $method->getAttributes(MateTool::class)) {
+                if ([] !== $method->getAttributes(MateTool::class) || [] !== $method->getAttributes(MateResourceTemplate::class)) {
                     $classes[] = $class;
 
                     break;

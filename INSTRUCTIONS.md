@@ -15,9 +15,9 @@ The skills shipped with this extension (`sylius-dev` entry point + `sylius-resou
 | `sylius_resource_inspect` | Resource diagnostic: classes wired, custom-factory `__construct(string $className)` signature check, interface auto-detection vs explicit, ResourceInterface conformance, generated service ids |
 | `sylius_mailer_verify_template` | After wiring a mailer entry, confirm the configured Twig template resolves and is non-empty |
 | `sylius_domain_list_grids` | Mirroring an existing admin grid for a new resource |
-| `sylius_hooks_list` | Enumerating registered TwigHooks; each item's `uri` (`sylius://hook/<hook_name>`) reads that hook's hookables via `vendor/bin/mate resources:read <uri>` |
+| `sylius_hooks_list` | Enumerating registered TwigHooks |
 | `sylius_hooks_find_for_template` | Finding which hook(s) enclose a given template path |
-| `sylius_hooks_list_hookables` | Listing hookables attached to a given hook (same payload as the `sylius://hook/<hook_name>` resource) |
+| `sylius_hooks_list_hookables` | Listing hookables attached to a given hook |
 | `sylius_hooks_resolve_for_visibility` | For a visibility intent (`oos`, `in_stock`, `always`, `logged_in`, `admin_only`) + context substring + section, return `safe_hooks` / `unsafe_hooks`. **Call before attaching widgets that should render outside the parent's normal visibility branch** (e.g. back-in-stock when product is OOS) |
 | `sylius_grid_actions_audit` | Validate a grid's `actions:` block. Warns on `main.delete` (item-scoped), missing `main.create`, mis-scoped `item.create`, etc. |
 | `sylius_email_capture_status` | Inspect active `MAILER_DSN`. Returns `observable=true/false` + recommended action when null-routed (call `sylius_admin_restock_via_http` for profiler-based assertion) |
@@ -37,6 +37,18 @@ The skills shipped with this extension (`sylius-dev` entry point + `sylius-resou
 | `sylius_service_decorators` | Every service that decorates a `sylius.*`/`sylius_*` id: `original_service_id`, `decorator_class`, `original_class`, `decorator_package` (nullable — decoration is orthogonal to plugins; a decorator can be the host project's own customization), `chain_position`/`chain_length` (1 = outermost, what the container hands out; the highest position wraps the original directly — decoration priorities themselves are gone from the compiled container). Facts only — **you** interpret what a decorator implies (e.g. MSI's checker means stock lives on `InventorySourceStockInterface`, not `ProductVariant`); read `decorator_class` via `sylius_resource_inspect`/file read if unsure. **Call before designing any inventory/order/price/availability listener whose target might already be overridden** |
 | `sylius_plugin_compatibility` | For every `sylius-plugin`-type package in `composer.lock`, checks whether its INSTALLED version supports `target_sylius_version` (reads that plugin's own `vendor/<pkg>/composer.json` constraint, offline) and, if not, looks up Packagist for the newest stable version that does. **Call before bumping `sylius/sylius`** — pair with `sylius_installed_plugins.sylius_version` for "what am I on, what needs to move first" |
 | `sylius_project_audit` | One-shot audit of Sylius-Standard baseline conventions: services.yaml excludes, core repo aliases, sync messenger in dev, `framework.router.default_uri`, mailer observable, twig_hooks dir, project `CLAUDE.md`. Returns `patches_available[]` |
+
+## Resources
+
+Items returned by the list tools carry a `uri`; read one with `vendor/bin/mate resources:read <uri>` (add `--format=json` for machine-readable output) instead of composing the detail tool call.
+
+| URI | From the list tool | Same payload as |
+|---|---|---|
+| `sylius://resource/<alias>` | `sylius_domain_list_resources` | `sylius_resource_inspect` |
+| `sylius://grid/<name>` | `sylius_domain_list_grids` | — full grid definition after config merge (fields, filters, actions with their options) |
+| `sylius://hook/<hook_name>` | `sylius_hooks_list` | `sylius_hooks_list_hookables` |
+| `sylius://twig/<kind>/<name>` | `sylius_twig_list_functions` | `sylius_twig_function_verify` with `kind` |
+| `sylius://route/<name>` | `sylius_routes_show` (list mode) | `sylius_route_inspect` |
 
 ## Hard rules
 
